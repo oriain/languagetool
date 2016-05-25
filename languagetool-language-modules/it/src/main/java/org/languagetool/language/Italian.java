@@ -29,6 +29,7 @@ import org.languagetool.LanguageMaintainedState;
 import org.languagetool.languagemodel.LanguageModel;
 import org.languagetool.languagemodel.LuceneLanguageModel;
 import org.languagetool.rules.*;
+import org.languagetool.rules.it.AgreementRule;
 import org.languagetool.rules.it.ItalianConfusionProbabilityRule;
 import org.languagetool.rules.it.ItalianWordRepeatRule;
 import org.languagetool.rules.it.MorfologikItalianSpellerRule;
@@ -97,7 +98,8 @@ public class Italian extends Language implements AutoCloseable {
             new MorfologikItalianSpellerRule(messages, this),
             new UppercaseSentenceStartRule(messages, this),
             new ItalianWordRepeatRule(messages, this),
-            new MultipleWhitespaceRule(messages, this)
+            new MultipleWhitespaceRule(messages, this),
+            new AgreementRule(messages)
     );
   }
 

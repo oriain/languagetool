@@ -7,17 +7,19 @@ import org.languagetool.tagging.it.tag.Feature;
 import org.languagetool.tagging.it.tag.PartOfSpeech;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 /**
  * Created by littl on 5/21/2016.
  */
-class ItalianReading {
+public class ItalianReading {
     private AnalyzedToken source;
     ItalianReading(AnalyzedToken source) {
         this.source = source;
         parsePosTag();
     }
 
+    public PartOfSpeech pos;
     private Feature.Gender gender;
     private Feature.Number number;
     private Feature.Person person;
@@ -26,7 +28,6 @@ class ItalianReading {
     private Feature.Tense tense;
     private Feature.Clitics clitics;
     private Feature.Cli cli;
-    private PartOfSpeech pos;
 
     private boolean hasGender()  { return this.gender  != null; }
     private boolean hasNumber()  { return this.number  != null; }
@@ -73,7 +74,7 @@ class ItalianReading {
         return featureString;
     }
 
-    boolean agreesWith(ItalianReading other) {
+    public boolean agreesWith(ItalianReading other) {
         // A single feature agrees if the following is true.
         //   IF _this_ doesn't have the feature
         //   OR _that_ doesn't have the feature
@@ -100,8 +101,7 @@ class ItalianReading {
 
 
         String posTag = this.source.getPOSTag();
-        assert posTag != null;
-        if (posTag.isEmpty()) return;
+        if (posTag == null || posTag.isEmpty()) return;
 
         // Attempt to split the information into derivational and inflectional parts.
         String derivationalInflectionalSeparator = ":";
@@ -160,13 +160,14 @@ class ItalianReading {
             // The index is inclusive when used as the fromIndex in lastIndexOf()
             // but it's exclusive when used as the endIndex in substring.
             String featureName = info.substring(beginIndex, endIndex);
+            String lowerFeatureName = featureName.toLowerCase();
 
             // Gender
             // This if statement will always be false.  Just keeping for consistency.
             // TODO: Should I throw an exception if two features are defined for the same token?
             if (!foundMatch && this.gender == null) {
                 try {
-                    this.gender = Feature.Gender.valueOf(featureName);
+                    this.gender = Feature.Gender.valueOf(lowerFeatureName);
                     foundMatch = true;
                 } catch (IllegalArgumentException ignored) { }
             }
@@ -174,7 +175,7 @@ class ItalianReading {
             // Number
             if (!foundMatch && this.number == null) {
                 try {
-                    this.number = Feature.Number.valueOf(featureName);
+                    this.number = Feature.Number.valueOf(lowerFeatureName);
                     foundMatch = true;
                 } catch (IllegalArgumentException ignored) { }
             }
@@ -200,7 +201,7 @@ class ItalianReading {
             // Degree
             if (!foundMatch && this.degree == null) {
                 try {
-                    this.degree = Feature.Degree.valueOf(featureName);
+                    this.degree = Feature.Degree.valueOf(lowerFeatureName);
                     foundMatch = true;
                 } catch (IllegalArgumentException ignored) { }
             }
@@ -208,7 +209,7 @@ class ItalianReading {
             // Mood
             if (!foundMatch && this.mood == null) {
                 try {
-                    this.mood = Feature.Mood.valueOf(featureName);
+                    this.mood = Feature.Mood.valueOf(lowerFeatureName);
                     foundMatch = true;
                 } catch (IllegalArgumentException ignored) { }
             }
@@ -216,7 +217,7 @@ class ItalianReading {
             // Tense
             if (!foundMatch && this.tense == null) {
                 try {
-                    this.tense = Feature.Tense.valueOf(featureName);
+                    this.tense = Feature.Tense.valueOf(lowerFeatureName);
                     foundMatch = true;
                 } catch (IllegalArgumentException ignored) { }
             }
@@ -224,7 +225,7 @@ class ItalianReading {
             // Clitics
             if (!foundMatch && this.clitics == null) {
                 try {
-                    this.clitics = Feature.Clitics.valueOf(featureName);
+                    this.clitics = Feature.Clitics.valueOf(lowerFeatureName);
                     foundMatch = true;
                 } catch (IllegalArgumentException ignored) { }
             }

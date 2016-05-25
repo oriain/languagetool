@@ -3,6 +3,7 @@ package org.languagetool.tagging.it;
 import org.apache.commons.lang.StringUtils;
 import org.languagetool.AnalyzedToken;
 import org.languagetool.AnalyzedTokenReadings;
+import org.languagetool.tagging.it.tag.DependencyRelation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,13 +12,23 @@ import java.util.TreeMap;
 /**
  * Created by littl on 5/21/2016.
  */
-class ItalianToken {
-    private AnalyzedTokenReadings source;
-    private ItalianReading[] readings;
+public class ItalianToken {
+    public AnalyzedTokenReadings source;
+    public ItalianReading[] readings;
+    public ItalianToken head;
+    public DependencyRelation dependencyRelation;
 
-    ItalianToken(AnalyzedTokenReadings token) {
+    private ItalianToken(AnalyzedTokenReadings token) {
         this.source = token;
+    }
 
+    public static ItalianToken create(AnalyzedTokenReadings token) {
+        ItalianToken italianToken = new ItalianToken(token);
+        italianToken.initializeItalianReadings();
+        return italianToken;
+    }
+
+    private void initializeItalianReadings() {
         // Convert the readings to Italian readings
         ArrayList<ItalianReading> italianReadings = new ArrayList<>();
         List<AnalyzedToken> readings = this.source.getReadings();
@@ -47,6 +58,7 @@ class ItalianToken {
 
             // Lemma
             String lemma = reading.getLemma();
+            if (lemma == null || lemma.isEmpty()) lemma = "_";
             lemmas.put(readingId, lemma);
 
             // C-POS and F-POS
@@ -56,6 +68,10 @@ class ItalianToken {
             String featuresString = reading.getFeaturesString();
             features.put(readingId, featuresString);
         }
+
+        if (lemmas.size() < 1)   lemmas.put(1, "_");
+        if (pos.size() < 1)      pos.put(1, "_");
+        if (features.size() < 1) features.put(1, "_");
 
         // Grab all the parts for output in CoNLL format.
         // Token ID is not known at this level.
@@ -81,13 +97,15 @@ class ItalianToken {
         return StringUtils.join(columns, "\t");
     }
 
-    boolean agreesWith(ItalianToken other) {
+    public boolean agreesWith(ItalianToken other) {
 
         // Loop through all readings for this token.
         for (ItalianReading reading : this.readings) {
+
             // Compare it against all possible readings of the other token.
-            for (int j = 0; j < other.readings.length; j++) {
-                ItalianReading otherReading = other.readings[j];
+            for (ItalianReading otherReading : other.readings) {
+
+                // If the readings agree, return true, otherwise keep checking.
                 boolean readingsAgree = reading.agreesWith(otherReading);
                 if (readingsAgree) return true;
             }

@@ -2,6 +2,8 @@ package org.languagetool.tagging.it;
 
 import org.languagetool.AnalyzedSentence;
 import org.languagetool.AnalyzedTokenReadings;
+import org.languagetool.tagging.it.tag.DependencyRelation;
+import org.languagetool.tagging.it.tag.Feature;
 import org.maltparser.concurrent.graph.ConcurrentDependencyGraph;
 import org.maltparser.concurrent.graph.ConcurrentDependencyNode;
 
@@ -12,7 +14,7 @@ import java.util.ArrayList;
  */
 public class ItalianSentence {
     private AnalyzedSentence source;
-    private ItalianToken[] tokens;
+    public ItalianToken[] tokens;
     private ConcurrentDependencyGraph graph;
 
     // Constructor is private to force use of the create() method.
@@ -34,10 +36,36 @@ public class ItalianSentence {
         AnalyzedTokenReadings[] tokens = this.source.getTokensWithoutWhitespace();
         for (int i=1; i<tokens.length; i++) {
             AnalyzedTokenReadings token = tokens[i];
-            ItalianToken italianToken = new ItalianToken(token);
+            ItalianToken italianToken = ItalianToken.create(token);
             italianTokens.add(italianToken);
         }
         this.tokens = italianTokens.toArray(new ItalianToken[italianTokens.size()]);
+    }
+
+    public void setDependencyGraph(ConcurrentDependencyGraph graph) {
+        this.graph = graph;
+
+        // Update the Italian tokens to store the dependency relation.
+        for (int i = 1; i<graph.nTokenNodes(); i++) { // Start at 1 to skip over the root node.
+
+            // Get the tokens.
+            ConcurrentDependencyNode graphNode = graph.getTokenNode(i);
+            ItalianToken italianToken = tokens[i-1];
+
+            // Update the head of the token.
+            int headId = graphNode.getHeadIndex();
+            if (headId > 0) italianToken.head = tokens[headId-1];
+
+            // Update the dependency relation.
+            String depRel = graphNode.getLabel(7);
+            try {
+                italianToken.dependencyRelation = DependencyRelation.valueOf(depRel);
+            } catch (IllegalArgumentException ignored) { }
+        }
+    }
+
+    public ConcurrentDependencyGraph getDependencyGraph() {
+        return this.graph;
     }
 
     public String[] toCoNLL() {
@@ -51,64 +79,5 @@ public class ItalianSentence {
         }
 
         return wordLines.toArray(new String[wordLines.size()]);
-    }
-
-    public void setDependencyGraph(ConcurrentDependencyGraph graph) {
-        this.graph = graph;
-    }
-
-    public boolean checkAgreement() {
-
-        // Loop through the tokens to check agreement.
-        // Start at index 1 to skip over the blank root node.
-        for (int i = 1; i < this.graph.nTokenNodes(); i++) {
-            ConcurrentDependencyNode node = this.graph.getTokenNode(i);
-
-            // At the moment, we only care about subject-verb agreement, for the moment.
-            boolean isSubject = node.getLabel(7).contains("SUBJ");
-            if (isSubject) {
-
-                // Output subject information
-                String word = node.getLabel(1);
-                String pos = node.getLabel(3);
-                String features = node.getLabel(5);
-                System.out.printf("Subject: %s\t%s\t%s%n", word, pos, features);
-
-                // Output parent information.
-                ConcurrentDependencyNode head = node.getHead();
-                word = head.getLabel(1);
-                pos = head.getLabel(3);
-                features = head.getLabel(5);
-                System.out.printf("Parent: %s\t%s\t%s%n", word, pos, features);
-
-                // Check to see of the head is a verb.
-                boolean isVerb = head.getLabel(3).contains("VER");
-                if (!isVerb) {
-                    System.out.println("The parent of the subject is not a verb");
-                    return false;
-                }
-                System.out.println("The parent of the subject is a verb.");
-
-                // Use the token id of the head graph node to
-                // retrieve the Italian token representing the verb.
-                String headTokenId = head.getLabel(0);
-                int headId = Integer.parseInt(headTokenId);
-                ItalianToken verb = this.tokens[headId];
-
-                // Grab the Italian token for the subject.
-                ItalianToken subject = this.tokens[i];
-
-                // Now that we have Italian tokens for the subject and verb, check agreement.
-                boolean hasAgreement = verb.agreesWith(subject);
-                if (!hasAgreement) {
-                    System.out.println("The subject's features do not agree with the verb's features.");
-                    return false;
-                }
-                System.out.println("The subject's features agree with the verb's features.");
-
-            } // End of subject analysis.
-        } // Done checking all the tokens in a sentence.
-
-        return true;
     }
 }

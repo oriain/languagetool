@@ -59,7 +59,7 @@ public class Feature {
     }
 
     public enum Gender {
-        // TODO: How do I deal with the different casing?  Just use toLowerCase?
+        // How do I deal with the different casing?  Just use toLowerCase? YES!
         F, f,   // Feminine
         M, m    // Masculine
     }
