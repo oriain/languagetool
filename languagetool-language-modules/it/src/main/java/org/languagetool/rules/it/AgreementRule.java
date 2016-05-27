@@ -4,6 +4,7 @@ import org.languagetool.AnalyzedSentence;
 import org.languagetool.JLanguageTool;
 import org.languagetool.rules.Rule;
 import org.languagetool.rules.RuleMatch;
+import org.languagetool.synthesis.ItalianSynthesizer;
 import org.languagetool.tagging.it.CoNLL;
 import org.languagetool.tagging.it.ItalianReading;
 import org.languagetool.tagging.it.ItalianSentence;
@@ -18,12 +19,14 @@ import org.maltparser.core.exception.MaltChainedException;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.ResourceBundle;
 
 /**
  * Created by littl on 5/21/2016.
  */
 public class AgreementRule extends Rule {
+    // TODO: Handle coordinating conjunction (false and true positives).
     private ArrayList<RuleMatch> ruleMatches;
     private ArrayList<AgreementRelationship> relationships;
 
@@ -32,11 +35,7 @@ public class AgreementRule extends Rule {
         ruleMatches = new ArrayList<>();
 
         // Construct subject-verb agreement
-        AgreementRelationship subjectVerbAgreement = new AgreementRelationship();
-        subjectVerbAgreement.description = "The subject and verb do not agree.";
-        subjectVerbAgreement.childPos.add(PartOfSpeech.NOUN);
-        subjectVerbAgreement.relation.add(DependencyRelation.SUBJ);
-        subjectVerbAgreement.parentPos.add(PartOfSpeech.VER);
+        AgreementRelationship subjectVerbAgreement = new SubjectVerbAgreement();
 
         // Construct noun-article agreement
         AgreementRelationship nounAdjectiveAgreement = new AgreementRelationship();
@@ -120,7 +119,7 @@ public class AgreementRule extends Rule {
 
     }
 
-    private boolean checkAgreement(ItalianSentence sentence) {
+    private boolean checkAgreement(ItalianSentence sentence) throws IOException {
 
         // We need to check each type of agreement rule to see if the
         // tokens in the sentence fall into that type of agreement check.
@@ -145,20 +144,23 @@ public class AgreementRule extends Rule {
                 if (!relationship.isValidDependencyRelation(child)) continue;
 
                 // If all three requirements are met, then check for agreeable pairs.
-                boolean hasAgreeablePair = false;
-                for (ItalianReading childReading : validChildReadings) {
-                    for (ItalianReading parentReading : validParentReadings)
-                        if (childReading.agreesWith(parentReading))
-                            hasAgreeablePair = true;
-                }
+                boolean hasAgreeablePair = checkForAgreeablePair(validChildReadings, validParentReadings);
 
                 // If the words disagree, generate a rule match.
                 if (!hasAgreeablePair) {
+                    // Make check for exemptions to this agreement relationship.
+                    boolean isExempt = relationship.checkForExemption(child);
+                    if (isExempt) continue;
+
+                    // We need to generate suggestions for replacement.
+                    // Use the features from the child overlaid onto the parent.
+                    ArrayList<String> replacements = generateReplacements(validChildReadings, validParentReadings);
+
+                    // Construct the rule match to replace the parent.
                     int start = parent.source.getStartPos();
                     int end = parent.source.getEndPos();
                     RuleMatch ruleMatch = new RuleMatch(this, start, end, relationship.description);
-                    //ruleMatch.setSuggestedReplacement("replacement (TODO)");
-                    ruleMatch.setSuggestedReplacement("Paired word: " + child.source.getToken());
+                    if (replacements.size() > 0) ruleMatch.setSuggestedReplacements(replacements);
                     this.ruleMatches.add(ruleMatch);
                 }
             } // Done looping through the tokens in the sentence.
@@ -227,5 +229,43 @@ public class AgreementRule extends Rule {
 //        } // Done checking all the tokens in a sentence.
 
         return ruleMatches.size() < 1;
+    }
+
+    private boolean checkForAgreeablePair(ItalianReading[] childReadings, ItalianReading[] parentReadings) {
+        // If all three requirements are met, then check for agreeable pairs.
+        boolean hasAgreeablePair = false;
+        for (ItalianReading childReading : childReadings) {
+            for (ItalianReading parentReading : parentReadings) {
+                if (childReading.agreesWith(parentReading)) {
+                    hasAgreeablePair = true;
+                }
+            }
+        }
+        return hasAgreeablePair;
+    }
+
+    private ArrayList<String> generateReplacements(ItalianReading[] childReadings, ItalianReading[] parentReadings) throws IOException {
+        ArrayList<String> replacements = new ArrayList<>();
+        for (ItalianReading parentReading : parentReadings) {
+            for (ItalianReading childReading : childReadings) {
+
+                // Create a copy of the reading being replaced
+                ItalianReading suggestion = new ItalianReading(parentReading);
+
+                // Pull in the features from the controlling word.
+                suggestion.matchOverlappingFeatures(childReading);
+
+                // Construct the morphology for the suggestion.
+                // Hopefully it will be found in the dictionary.
+                String posTag = suggestion.generatePosTag();
+
+                // Synthesize the suggested word.
+                ItalianSynthesizer synthesizer = new ItalianSynthesizer();
+                String[] suggestions = synthesizer.synthesize(suggestion.analyzedToken, posTag);
+
+                if (suggestions.length > 0) Collections.addAll(replacements, suggestions);
+            }
+        }
+        return replacements;
     }
 }

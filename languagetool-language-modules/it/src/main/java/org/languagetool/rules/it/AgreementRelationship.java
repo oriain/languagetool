@@ -11,7 +11,7 @@ import java.util.HashSet;
 /**
  * Created by littl on 5/24/2016.
  */
-class AgreementRelationship {
+class AgreementRelationship implements AgreementRelationExemption {
     public String description;
     HashSet<PartOfSpeech> childPos = new HashSet<>();
     HashSet<PartOfSpeech> parentPos = new HashSet<>();
@@ -34,11 +34,11 @@ class AgreementRelationship {
         return readings.toArray(new ItalianReading[readings.size()]);
     }
 
-    public ItalianReading[] getValidChildReadings(ItalianToken token) {
+    ItalianReading[] getValidChildReadings(ItalianToken token) {
         return getValidReadings(this.childPos, token);
     }
 
-    public ItalianReading[] getValidParentReadings(ItalianToken token) {
+    ItalianReading[] getValidParentReadings(ItalianToken token) {
         return getValidReadings(this.parentPos, token);
     }
 
@@ -72,7 +72,12 @@ class AgreementRelationship {
 //        return false;
 //    }
 
-    public boolean isValidDependencyRelation(ItalianToken token) {
+    boolean isValidDependencyRelation(ItalianToken token) {
         return this.relation.contains(token.dependencyRelation);
+    }
+
+    @Override
+    public boolean checkForExemption(ItalianToken child) {
+        return false;
     }
 }

@@ -17,6 +17,7 @@ public class ItalianToken {
     public ItalianReading[] readings;
     public ItalianToken head;
     public DependencyRelation dependencyRelation;
+    private ArrayList<ItalianToken> children = new ArrayList<>();
 
     private ItalianToken(AnalyzedTokenReadings token) {
         this.source = token;
@@ -37,6 +38,14 @@ public class ItalianToken {
             italianReadings.add(italianReading);
         }
         this.readings = italianReadings.toArray(new ItalianReading[italianReadings.size()]);
+    }
+
+    public void addChild(ItalianToken child) {
+        children.add(child);
+    }
+
+    public ItalianToken[] getChildren() {
+        return this.children.toArray(new ItalianToken[this.children.size()]);
     }
 
     // Process each reading for information required by the CoNLL-X format.

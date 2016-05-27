@@ -8,6 +8,7 @@ import org.maltparser.concurrent.graph.ConcurrentDependencyGraph;
 import org.maltparser.concurrent.graph.ConcurrentDependencyNode;
 
 import java.util.ArrayList;
+import java.util.TreeMap;
 
 /**
  * Created by littl on 5/21/2016.
@@ -52,15 +53,19 @@ public class ItalianSentence {
             ConcurrentDependencyNode graphNode = graph.getTokenNode(i);
             ItalianToken italianToken = tokens[i-1];
 
-            // Update the head of the token.
-            int headId = graphNode.getHeadIndex();
-            if (headId > 0) italianToken.head = tokens[headId-1];
-
             // Update the dependency relation.
-            String depRel = graphNode.getLabel(7);
+            String depRel = graphNode.getLabel(7).replace("+", "_");
             try {
                 italianToken.dependencyRelation = DependencyRelation.valueOf(depRel);
             } catch (IllegalArgumentException ignored) { }
+
+            // Update the head of the token.
+            int headId = graphNode.getHeadIndex();
+            if (headId > 0) {
+                italianToken.head = tokens[headId-1];
+                // Also set this token as a child of it's head.
+                italianToken.head.addChild(italianToken);
+            }
         }
     }
 

@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 
+import org.jetbrains.annotations.NotNull;
 import org.languagetool.Language;
 import org.languagetool.LanguageMaintainedState;
 import org.languagetool.languagemodel.LanguageModel;
@@ -34,6 +35,8 @@ import org.languagetool.rules.it.ItalianConfusionProbabilityRule;
 import org.languagetool.rules.it.ItalianWordRepeatRule;
 import org.languagetool.rules.it.MorfologikItalianSpellerRule;
 
+import org.languagetool.synthesis.ItalianSynthesizer;
+import org.languagetool.synthesis.Synthesizer;
 import org.languagetool.tagging.Tagger;
 import org.languagetool.tagging.it.ItalianTagger;
 import org.languagetool.tokenizers.SRXSentenceTokenizer;
@@ -48,6 +51,7 @@ public class Italian extends Language implements AutoCloseable {
   private SentenceTokenizer sentenceTokenizer;
   private LuceneLanguageModel languageModel;
   private Disambiguator disambiguator;
+  private Synthesizer synthesizer;
   
   @Override
   public String getName() {
@@ -70,6 +74,15 @@ public class Italian extends Language implements AutoCloseable {
       tagger = new ItalianTagger();
     }
     return tagger;
+  }
+
+  @Override
+  @NotNull
+  public Synthesizer getSynthesizer() {
+    if (synthesizer == null) {
+      synthesizer = new ItalianSynthesizer();
+    }
+    return synthesizer;
   }
 
   @Override
