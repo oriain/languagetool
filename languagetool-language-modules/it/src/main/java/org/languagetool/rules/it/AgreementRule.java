@@ -1,7 +1,6 @@
 package org.languagetool.rules.it;
 
 import org.languagetool.AnalyzedSentence;
-import org.languagetool.JLanguageTool;
 import org.languagetool.rules.Rule;
 import org.languagetool.rules.RuleMatch;
 import org.languagetool.synthesis.ItalianSynthesizer;
@@ -11,13 +10,8 @@ import org.languagetool.tagging.it.ItalianSentence;
 import org.languagetool.tagging.it.ItalianToken;
 import org.languagetool.tagging.it.tag.DependencyRelation;
 import org.languagetool.tagging.it.tag.PartOfSpeech;
-import org.maltparser.concurrent.ConcurrentMaltParserModel;
-import org.maltparser.concurrent.ConcurrentMaltParserService;
-import org.maltparser.concurrent.graph.ConcurrentDependencyGraph;
-import org.maltparser.core.exception.MaltChainedException;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ResourceBundle;
@@ -37,7 +31,7 @@ public class AgreementRule extends Rule {
         // Construct subject-verb agreement
         AgreementRelationship subjectVerbAgreement = new SubjectVerbAgreement();
 
-        // Construct noun-article agreement
+        // Construct noun-adjective agreement
         AgreementRelationship nounAdjectiveAgreement = new AgreementRelationship();
         nounAdjectiveAgreement.description = "The adjective and the noun it modifies do not agree.";
         nounAdjectiveAgreement.childPos.add(PartOfSpeech.ADJ);
@@ -48,7 +42,7 @@ public class AgreementRule extends Rule {
         AgreementRelationship nounDeterminerAgreement = new AgreementRelationship();
         nounDeterminerAgreement.childPos.add(PartOfSpeech.NOUN);
         nounDeterminerAgreement.relation.add(DependencyRelation.ARG);
-        nounDeterminerAgreement.description = "The determiner and the noun it modifies do not agree.";
+        nounDeterminerAgreement.description = "The noun and the determiner it modifies do not agree.";
         nounDeterminerAgreement.parentPos.add(PartOfSpeech.DET_DEMO);
         nounDeterminerAgreement.parentPos.add(PartOfSpeech.DET_POSS);
         nounDeterminerAgreement.parentPos.add(PartOfSpeech.DET_WH);
@@ -77,34 +71,17 @@ public class AgreementRule extends Rule {
     @Override
     public RuleMatch[] match(AnalyzedSentence sentence) throws IOException {
         // Convert the analyzed sentence to an Italian sentence. Italian
-        // sentences have Italian tokens, which have Italian specific features.
+        // sentences have Italian tokens, which have Italian specific information.
         ItalianSentence italianSentence = ItalianSentence.create(sentence);
-        String[] tokens = italianSentence.toCoNLL();
+        return match(italianSentence);
+    }
 
-        // Load the model, initialize the parser, and parse the tokens.
-        String filename = "/it/italian.mco";
-        URL model = JLanguageTool.getDataBroker().getFromResourceDirAsUrl(filename);
-        //URL model = new File(filename).toURI().toURL();
-        ConcurrentMaltParserModel parser;
-        ConcurrentDependencyGraph graph = null;
-        try {
-            parser = ConcurrentMaltParserService.initializeParserModel(model);
-            graph = parser.parse(tokens);
-        } catch (MaltChainedException e) {
-            e.printStackTrace();
-        }
-
-        if (graph == null) {
-            //System.out.println("Could not parse the sentence tokens.");
-            return new RuleMatch[0];
-        }
-
+    public RuleMatch[] match(ItalianSentence sentence) throws IOException {
         // Write the tokens to a file for viewing in MatlEval.
         //System.out.println("Outputting tokens for viewing.");
-        CoNLL.writeFile(graph, "tokens.conl");
+        CoNLL.writeFile(sentence, "tokens.conl");
 
-        italianSentence.setDependencyGraph(graph);
-        boolean hasValidAgreement = checkAgreement(italianSentence);
+        boolean hasValidAgreement = checkAgreement(sentence);
         if (hasValidAgreement) {
             //System.out.println("No agreement violations in the sentence were detected.");
             return new RuleMatch[0];
@@ -149,7 +126,7 @@ public class AgreementRule extends Rule {
                 // If the words disagree, generate a rule match.
                 if (!hasAgreeablePair) {
                     // Make check for exemptions to this agreement relationship.
-                    boolean isExempt = relationship.checkForExemption(child);
+                    boolean isExempt = relationship.checkForExemption(child, parent);
                     if (isExempt) continue;
 
                     // We need to generate suggestions for replacement.
@@ -157,8 +134,8 @@ public class AgreementRule extends Rule {
                     ArrayList<String> replacements = generateReplacements(validChildReadings, validParentReadings);
 
                     // Construct the rule match to replace the parent.
-                    int start = parent.source.getStartPos();
-                    int end = parent.source.getEndPos();
+                    int start = parent.getStartPos();
+                    int end = parent.getEndPos();
                     RuleMatch ruleMatch = new RuleMatch(this, start, end, relationship.description);
                     if (replacements.size() > 0) ruleMatch.setSuggestedReplacements(replacements);
                     this.ruleMatches.add(ruleMatch);
@@ -228,23 +205,27 @@ public class AgreementRule extends Rule {
 //            } // End of subject analysis.
 //        } // Done checking all the tokens in a sentence.
 
+        // We also need to check for AvereAgreemnt.
+        AvereAgreement avereAgreement = new AvereAgreement(this);
+        RuleMatch[] match = avereAgreement.match(sentence);
+        Collections.addAll(ruleMatches, match);
+
         return ruleMatches.size() < 1;
     }
 
-    private boolean checkForAgreeablePair(ItalianReading[] childReadings, ItalianReading[] parentReadings) {
+    boolean checkForAgreeablePair(ItalianReading[] childReadings, ItalianReading[] parentReadings) {
         // If all three requirements are met, then check for agreeable pairs.
-        boolean hasAgreeablePair = false;
         for (ItalianReading childReading : childReadings) {
             for (ItalianReading parentReading : parentReadings) {
                 if (childReading.agreesWith(parentReading)) {
-                    hasAgreeablePair = true;
+                    return true;
                 }
             }
         }
-        return hasAgreeablePair;
+        return false;
     }
 
-    private ArrayList<String> generateReplacements(ItalianReading[] childReadings, ItalianReading[] parentReadings) throws IOException {
+    ArrayList<String> generateReplacements(ItalianReading[] childReadings, ItalianReading[] parentReadings) throws IOException {
         ArrayList<String> replacements = new ArrayList<>();
         for (ItalianReading parentReading : parentReadings) {
             for (ItalianReading childReading : childReadings) {

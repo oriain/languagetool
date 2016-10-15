@@ -23,6 +23,8 @@ import org.languagetool.chunking.Chunker;
 import org.languagetool.databroker.ResourceDataBroker;
 import org.languagetool.language.Contributor;
 import org.languagetool.languagemodel.LanguageModel;
+import org.languagetool.parsers.DependencyParser;
+import org.languagetool.parsers.DependencyParserException;
 import org.languagetool.rules.Rule;
 import org.languagetool.rules.patterns.*;
 import org.languagetool.synthesis.Synthesizer;
@@ -241,6 +243,11 @@ public abstract class Language {
    */
   @Nullable
   public Chunker getChunker() {
+    return null;
+  }
+
+  @Nullable
+  public DependencyParser getDependencyParser() throws DependencyParserException {
     return null;
   }
 

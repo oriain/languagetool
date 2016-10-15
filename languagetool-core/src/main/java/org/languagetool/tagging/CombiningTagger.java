@@ -25,7 +25,7 @@ import java.util.List;
  * Tags a word using two taggers, combining their results.
  * @since 2.8
  */
-public class CombiningTagger implements WordTagger {
+class CombiningTagger implements WordTagger {
 
   private final WordTagger tagger1;
   private final WordTagger tagger2;
@@ -44,7 +44,7 @@ public class CombiningTagger implements WordTagger {
    *                                  used if both first and second tagger can tag that word
    * @since 3.2
    */
-  public CombiningTagger(WordTagger tagger1, WordTagger tagger2, WordTagger removalTagger, boolean overwriteWithSecondTagger) {
+  CombiningTagger(WordTagger tagger1, WordTagger tagger2, WordTagger removalTagger, boolean overwriteWithSecondTagger) {
     this.tagger1 = tagger1;
     this.tagger2 = tagger2;
     this.removalTagger = removalTagger;
@@ -55,6 +55,8 @@ public class CombiningTagger implements WordTagger {
   public List<TaggedWord> tag(String word) {
     List<TaggedWord> result = new ArrayList<>();
     result.addAll(tagger2.tag(word));
+    // Could rewrite to make simpler / more legible.
+    // if (!overwriteWithSecondTagger || result.size() == 0) {
     if (!(overwriteWithSecondTagger && result.size() > 0)) {
       result.addAll(tagger1.tag(word));
     }

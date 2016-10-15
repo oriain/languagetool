@@ -36,11 +36,16 @@ import static org.languagetool.JLanguageTool.*;
  * 
  * @author Marcin Milkowski
  */
-public final class AnalyzedTokenReadings implements Iterable<AnalyzedToken> {
+public class AnalyzedTokenReadings implements Iterable<AnalyzedToken> {
 
-  private final boolean isWhitespace;
-  private final boolean isLinebreak;
-  private final boolean isSentStart;
+  // TODO: Restore later?
+  //private final boolean isWhitespace;
+  //private final boolean isLinebreak;
+  //private final boolean isSentStart;
+
+  private boolean isWhitespace;
+  private boolean isLinebreak;
+  private boolean isSentStart;
 
   private AnalyzedToken[] anTokReadings;
   private int startPos;

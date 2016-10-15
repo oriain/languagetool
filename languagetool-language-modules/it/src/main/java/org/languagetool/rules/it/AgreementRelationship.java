@@ -73,11 +73,12 @@ class AgreementRelationship implements AgreementRelationExemption {
 //    }
 
     boolean isValidDependencyRelation(ItalianToken token) {
+        if (this.relation.isEmpty()) return true;
         return this.relation.contains(token.dependencyRelation);
     }
 
     @Override
-    public boolean checkForExemption(ItalianToken child) {
+    public boolean checkForExemption(ItalianToken child, ItalianToken parent) {
         return false;
     }
 }

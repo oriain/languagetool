@@ -1,0 +1,12 @@
+# The opposite of added.txt: these readings will be removed.
+# Useful to remove incorrect readings from the binary dictionary without rebuilding it.
+# File Encoding: UTF-8
+# Format: fullform baseform postags (tab separated)
+gliel'	glielo	PRO-PERS-CLI-COM
+gliela	gliela	PRO-PERS-CLI-COM
+gliele	gliele	PRO-PERS-CLI-COM
+glieli	glieli	PRO-PERS-CLI-COM
+glielo	glielo	PRO-PERS-CLI-COM
+gliene	gliene	PRO-PERS-CLI-COM
+marciapiedi	marciapiedi	NOUN-M:p
+marciapiedi marciapiedi	NOUN-M:s

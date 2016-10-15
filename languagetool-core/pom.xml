@@ -167,6 +167,12 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.maltparser</groupId>
+            <artifactId>maltparser</artifactId>
+            <version>1.8.1</version>
+        </dependency>
     </dependencies>
 
 </project>

@@ -25,6 +25,8 @@ import org.languagetool.databroker.ResourceDataBroker;
 import org.languagetool.languagemodel.LanguageModel;
 import org.languagetool.markup.AnnotatedText;
 import org.languagetool.markup.AnnotatedTextBuilder;
+import org.languagetool.parsers.DependencyParseException;
+import org.languagetool.parsers.DependencyParserException;
 import org.languagetool.rules.*;
 import org.languagetool.rules.patterns.AbstractPatternRule;
 import org.languagetool.rules.patterns.FalseFriendRuleLoader;
@@ -707,36 +709,60 @@ public class JLanguageTool {
     return count;
   }
 
-  /**
-   * Tokenizes the given {@code sentence} into words and analyzes it,
-   * and then disambiguates POS tags.
-   * @param sentence sentence to be analyzed
-   */
-  public AnalyzedSentence getAnalyzedSentence(String sentence) throws IOException {
-    AnalyzedSentence analyzedSentence = language.getDisambiguator().disambiguate(getRawAnalyzedSentence(sentence));
+  private AnalyzedSentence RunDisambiguatorAndChunker(AnalyzedSentence rawAnalyzedSentence) throws IOException {
+    AnalyzedSentence analyzedSentence = language.getDisambiguator().disambiguate(rawAnalyzedSentence);
     if (language.getPostDisambiguationChunker() != null) {
       language.getPostDisambiguationChunker().addChunkTags(Arrays.asList(analyzedSentence.getTokens()));
     }
     return analyzedSentence;
   }
 
+  public AnalyzedSentence getAnalyzedSentence(List<String> tokens) throws IOException {
+    AnalyzedSentence rawAnalyzedSentence = getRawAnalyzedSentence(tokens);
+
+    // TODO: Disabling disambiguation and post-disambiguation chunker for now.  It overwrites my ItalianToken objects.
+    //AnalyzedSentence analyzedSentence = RunDisambiguatorAndChunker(rawAnalyzedSentence);
+    AnalyzedSentence analyzedSentence = rawAnalyzedSentence;
+
+    return analyzedSentence;
+  }
+
   /**
-   * Tokenizes the given {@code sentence} into words and analyzes it.
-   * This is the same as {@link #getAnalyzedSentence(String)} but it does not run
-   * the disambiguator.
+   * Tokenizes the given {@code sentence} into words and analyzes it,
+   * and then disambiguates POS tags.
    * @param sentence sentence to be analyzed
-   * @since 0.9.8
    */
-  public AnalyzedSentence getRawAnalyzedSentence(String sentence) throws IOException {
-    List<String> tokens = language.getWordTokenizer().tokenize(sentence);
+  public AnalyzedSentence getAnalyzedSentence(String sentence) throws IOException {
+    AnalyzedSentence rawAnalyzedSentence = getRawAnalyzedSentence(sentence);
+
+    // TODO: Disabling disambiguation and post-disambiguation chunker for now.  It overwrites my ItalianToken objects.
+    //AnalyzedSentence analyzedSentence = RunDisambiguatorAndChunker(rawAnalyzedSentence);
+    AnalyzedSentence analyzedSentence = rawAnalyzedSentence;
+
+    return analyzedSentence;
+  }
+
+  public AnalyzedSentence getRawAnalyzedSentence(List<String> tokens) throws IOException {
     Map<Integer, String> softHyphenTokens = replaceSoftHyphens(tokens);
 
     List<AnalyzedTokenReadings> aTokens = language.getTagger().tag(tokens);
+
     if (language.getChunker() != null) {
       language.getChunker().addChunkTags(aTokens);
     }
+
+    // Run dependency parsing after disambiguation.
+    try {
+      if (language.getDependencyParser() != null) {
+        language.getDependencyParser().addDependencies(aTokens);
+      }
+      // TODO: What the hell do I do with these exceptions?!
+    } catch (DependencyParserException | DependencyParseException e) {
+      e.printStackTrace();
+    }
+
     int numTokens = aTokens.size();
-    int posFix = 0; 
+    int posFix = 0;
     for (int i = 1; i < numTokens; i++) {
       aTokens.get(i).setWhitespaceBefore(aTokens.get(i - 1).isWhitespace());
       aTokens.get(i).setStartPos(aTokens.get(i).getStartPos() + posFix);
@@ -747,7 +773,7 @@ public class JLanguageTool {
         }
       }
     }
-        
+
     AnalyzedTokenReadings[] tokenArray = new AnalyzedTokenReadings[tokens.size() + 1];
     AnalyzedToken[] startTokenArray = new AnalyzedToken[1];
     int toArrayCount = 0;
@@ -777,6 +803,18 @@ public class JLanguageTool {
       tokenArray[lastToken].setParagraphEnd();
     }
     return new AnalyzedSentence(tokenArray);
+  }
+
+  /**
+   * Tokenizes the given {@code sentence} into words and analyzes it.
+   * This is the same as {@link #getAnalyzedSentence(String)} but it does not run
+   * the disambiguator.
+   * @param sentence sentence to be analyzed
+   * @since 0.9.8
+   */
+  public AnalyzedSentence getRawAnalyzedSentence(String sentence) throws IOException {
+    List<String> tokens = language.getWordTokenizer().tokenize(sentence);
+    return getRawAnalyzedSentence(tokens);
   }
 
   private Map<Integer, String> replaceSoftHyphens(List<String> tokens) {

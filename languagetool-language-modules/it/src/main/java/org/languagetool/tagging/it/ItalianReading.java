@@ -57,11 +57,25 @@ public class ItalianReading {
     private boolean hasCli()     { return this.cli     != null; }
     private boolean hasPos()     { return this.pos     != null; }
 
+    public Feature.Gender getGender() {
+        return this.gender;
+    }
+    public Feature.Number getNumber() {
+        return this.number;
+    }
+
+    public void setGender(Feature.Gender gender) {
+        this.gender = gender;
+    }
+    public void setNumber(Feature.Number number) {
+        this.number = number;
+    }
+
     public String getLemma() {
         return this.analyzedToken.getLemma();
     }
 
-    public String getPosString() {
+    String getPosString() {
         if (this.hasPos()) return this.pos.toString().replace("_", "-");
         return "_";
     }
@@ -69,7 +83,7 @@ public class ItalianReading {
     // TODO: Apparently features may have more than one value. Ex: Case=Acc,Dat
     // Will probably never need to handle this, at least for the Italian dictionary
     // being used, but it's nice to be aware of it in the future.
-    public String getFeaturesString() {
+    String getFeaturesString() {
         ArrayList<String> features = new ArrayList<>();
 
         // Only include features relevant for the particular part-of-speech.
@@ -366,6 +380,14 @@ public class ItalianReading {
                     if (parsingDerivations) derivationalFeatures.add("Pos"); // Always true for Pos.
                     foundMatch = true;
                 } catch (IllegalArgumentException ignored) { }
+            }
+
+            // COM
+            // There are six entries (gliela, gliele, ...) that have a derivational
+            // feature of COM.  There is no definition of COM in the morph-it! dictionary.
+            // If we detect COM, through it away and pretend we processed it.
+            if (!foundMatch && featureName.equalsIgnoreCase("COM")) {
+                foundMatch = true;
             }
 
             // Only move the endIndex closer to the front of the

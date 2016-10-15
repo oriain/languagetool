@@ -58,7 +58,8 @@ public class CatalanTagger extends BaseTagger {
   public CatalanTagger() {
     super("/ca/catalan.dict",  new Locale("ca"), false);
   }
-  
+
+  // TODO: This can be removed.  Returns false when the BaseTagger already returns false.
   @Override
   public boolean overwriteWithManualTagger(){
     return false;

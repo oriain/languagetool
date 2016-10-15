@@ -13,15 +13,57 @@ class SubjectVerbAgreement extends AgreementRelationship {
 
     SubjectVerbAgreement() {
         this.description = "The subject and verb do not agree.";
+
+        // Child
         this.childPos.add(PartOfSpeech.NOUN);
-        this.childPos.add(PartOfSpeech.ART);
+        this.childPos.add(PartOfSpeech.ART);//YES-implied, should we check actual attachment?
+        this.childPos.add(PartOfSpeech.PRO_DEMO);
+        this.childPos.add(PartOfSpeech.PRO_INDEF);
+        this.childPos.add(PartOfSpeech.PRO_NUM);
+        this.childPos.add(PartOfSpeech.PRO_PERS);
+        this.childPos.add(PartOfSpeech.PRO_WH);
+        this.childPos.add(PartOfSpeech.WH);
+        this.childPos.add(PartOfSpeech.WH_CHE);
+        // What is an example of Pronoun-Numeral
+        //this.childPos.add(PartOfSpeech.PRO_NUM);
+
+        // Subjects
         this.relation.add(DependencyRelation.SUBJ);
+        this.relation.add(DependencyRelation.SUBJ_OBJ);
+
+        // Objects
+        this.relation.add(DependencyRelation.OBJ_SUBJ);
+        this.relation.add(DependencyRelation.PREDCOMPL_OBJ);
+
+        // Parent
         this.parentPos.add(PartOfSpeech.VER);
+
+        // TODO: Look up which sentences use this.
+        //DependencyRelation.SUBJ_INDCOMPL;
+        //DependencyRelation.SUBJ_INDOBJ;
+        //DependencyRelation.SUBJ_LOCUT;
+        //DependencyRelation.SUBJ_SUBJ_IMPERS;
+
+        // TODO: Look up which sentences use this.
+        //DependencyRelation.PREDCOMPL_SUBJ_CLEFT
+        //DependencyRelation.PREDCOMPL_OBJ_LOCUT
     }
 
     @Override
-    public boolean checkForExemption(ItalianToken child) {
-        return checkForCoordinatingConjunction(child);
+    public boolean checkForExemption(ItalianToken child, ItalianToken parent) {
+        return checkForCoordinatingConjunction(child) || checkForAuxiliaryVerbEssere(parent);
+    }
+
+    // If the verb is a past participle verb, and it's connected to an auxiliary verb that does has AVERE as it's
+    // lemma, then special rules cover it's agreement and should be checked by a separate rule.  Specifically, if the
+    // past participle verb is connected to an auxiliary verb with the lemma of AVERE, then must take the masculine
+    // singular form, unless it's also connected to one of the direct object pronouns LO, LA, LE, LI, in which case it
+    // agrees with those direct object pronouns in gender and number.
+    private boolean checkForAuxiliaryVerbEssere(ItalianToken parent) {
+        for (ItalianToken child : parent.getChildren()) {
+            if (DependencyRelation.isAuxiliary(child) && child.isAvere()) return true;
+        }
+        return false;
     }
 
     // If the child (subject) is singular, but has a coordinating conjunction,

@@ -18,9 +18,16 @@
  */
 package org.languagetool.tagging.it;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
+import org.languagetool.AnalyzedToken;
+import org.languagetool.AnalyzedTokenReadings;
+import org.languagetool.language.Italian;
 import org.languagetool.tagging.BaseTagger;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
  * Italian tagger. Uses morph-it! lexicon compiled by Marco Baroni and Eros Zanchetta.

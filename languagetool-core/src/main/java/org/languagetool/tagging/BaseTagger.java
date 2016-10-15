@@ -86,6 +86,7 @@ public abstract class BaseTagger implements Tagger {
       throw new RuntimeException("Could not load dictionary from " + filename, e);
     }
     this.wordTagger = initWordTagger();
+    // TODO: Why is the word tagger not lazy initialized?
   }
 
   /**

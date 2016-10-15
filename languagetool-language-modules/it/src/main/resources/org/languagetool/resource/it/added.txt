@@ -2,3 +2,38 @@
 # This does not add words to the spell checker, see hunspell/spelling.txt for that.
 # File Encoding: UTF-8
 # Format: three tab-separated fields: fullform baseform postags
+gliel'	glielo	PRO-PERS-CLI-3-M-S
+gliela	gliela	PRO-PERS-CLI-3-F-S
+gliele	gliele	PRO-PERS-CLI-3-F-P
+glieli	glieli	PRO-PERS-CLI-3-M-P
+glielo	glielo	PRO-PERS-CLI-3-M-S
+melo	melo	PRO-PERS-CLI-3-M-S
+mela	mela	PRO-PERS-CLI-3-F-S
+meli	meli	PRO-PERS-CLI-3-M-P
+mele	mele	PRO-PERS-CLI-3-F-P
+telo	telo	PRO-PERS-CLI-3-M-S
+tela	tela	PRO-PERS-CLI-3-F-S
+teli	teli	PRO-PERS-CLI-3-M-P
+tele	tele	PRO-PERS-CLI-3-F-P
+selo	selo	PRO-PERS-CLI-3-M-S
+sela	sela	PRO-PERS-CLI-3-F-S
+seli	seli	PRO-PERS-CLI-3-M-P
+sele	sele	PRO-PERS-CLI-3-F-P
+celo	celo	PRO-PERS-CLI-3-M-S
+cela	cela	PRO-PERS-CLI-3-F-S
+celi	celi	PRO-PERS-CLI-3-M-P
+cele	cele	PRO-PERS-CLI-3-F-P
+velo	velo	PRO-PERS-CLI-3-M-S
+vela	vela	PRO-PERS-CLI-3-F-S
+veli	veli	PRO-PERS-CLI-3-M-P
+vele	vele	PRO-PERS-CLI-3-F-P
+fare	fare	VER:impr+pres+2+p
+scemo	scemo	NOUN-M:s
+vista	visto	VER:part+past+s+f
+viste	visto	VER:part+past+p+f
+visti	visto	VER:part+past+p+m
+visto	visto	VER:part+past+s+m
+visto	vistare	VER:ind+pres+1+s
+dolgono	dovere	VER:ind+pres+3+p
+gioventù	gioventù	NOUN-F:s
+si	si	ADV

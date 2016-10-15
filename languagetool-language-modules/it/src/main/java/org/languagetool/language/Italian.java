@@ -29,6 +29,10 @@ import org.languagetool.Language;
 import org.languagetool.LanguageMaintainedState;
 import org.languagetool.languagemodel.LanguageModel;
 import org.languagetool.languagemodel.LuceneLanguageModel;
+import org.languagetool.parsers.DependencyParser;
+import org.languagetool.parsers.DependencyParserException;
+import org.languagetool.parsers.ItalianMaltParser;
+import org.languagetool.parsers.MaltParser;
 import org.languagetool.rules.*;
 import org.languagetool.rules.it.AgreementRule;
 import org.languagetool.rules.it.ItalianConfusionProbabilityRule;
@@ -44,6 +48,9 @@ import org.languagetool.tokenizers.SentenceTokenizer;
 
 import org.languagetool.tagging.disambiguation.Disambiguator;
 import org.languagetool.tagging.disambiguation.rules.it.ItalianRuleDisambiguator;
+import org.maltparser.concurrent.ConcurrentMaltParserModel;
+import org.maltparser.concurrent.graph.ConcurrentDependencyGraph;
+import org.maltparser.core.exception.MaltChainedException;
 
 public class Italian extends Language implements AutoCloseable {
 
@@ -52,7 +59,8 @@ public class Italian extends Language implements AutoCloseable {
   private LuceneLanguageModel languageModel;
   private Disambiguator disambiguator;
   private Synthesizer synthesizer;
-  
+  private DependencyParser parser;
+
   @Override
   public String getName() {
     return "Italian";
@@ -74,6 +82,14 @@ public class Italian extends Language implements AutoCloseable {
       tagger = new ItalianTagger();
     }
     return tagger;
+  }
+
+  @Override
+  public DependencyParser getDependencyParser() throws DependencyParserException {
+    if (parser == null) {
+      parser = new ItalianMaltParser("/it/italian.mco");
+    }
+    return parser;
   }
 
   @Override

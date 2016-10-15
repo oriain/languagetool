@@ -12,19 +12,27 @@ import java.util.TreeMap;
 /**
  * Created by littl on 5/21/2016.
  */
-public class ItalianToken {
-    public AnalyzedTokenReadings source;
+public class ItalianToken extends AnalyzedTokenReadings {
     public ItalianReading[] readings;
     public ItalianToken head;
     public DependencyRelation dependencyRelation;
     private ArrayList<ItalianToken> children = new ArrayList<>();
+    private int tokenNumber;
 
     private ItalianToken(AnalyzedTokenReadings token) {
-        this.source = token;
+        // It would be nice if a copy constructor were provided.
+        // Stole this code from the copy() method of AnalyzedSentence.
+        super(token.getReadings(), token.getStartPos());
+        this.setHistoricalAnnotations(token.getHistoricalAnnotations());
+        this.setChunkTags(token.getChunkTags());
+        if (token.isImmunized()) this.immunize();
+        if (token.isIgnoredBySpeller()) this.ignoreSpelling();
+        this.setWhitespaceBefore(token.isWhitespaceBefore());
     }
 
-    public static ItalianToken create(AnalyzedTokenReadings token) {
+    public static ItalianToken create(AnalyzedTokenReadings token, int tokenNumber) {
         ItalianToken italianToken = new ItalianToken(token);
+        italianToken.tokenNumber = tokenNumber;
         italianToken.initializeItalianReadings();
         return italianToken;
     }
@@ -32,7 +40,7 @@ public class ItalianToken {
     private void initializeItalianReadings() {
         // Convert the readings to Italian readings
         ArrayList<ItalianReading> italianReadings = new ArrayList<>();
-        List<AnalyzedToken> readings = this.source.getReadings();
+        List<AnalyzedToken> readings = this.getReadings();
         for (AnalyzedToken reading : readings) {
             ItalianReading italianReading = new ItalianReading(reading);
             italianReadings.add(italianReading);
@@ -50,7 +58,7 @@ public class ItalianToken {
 
     // Process each reading for information required by the CoNLL-X format.
     // The columns are as follows: ID, Form, Lemma, C-POS, F-POS, Features, Head, DepRel, P-Head, P-DepRel
-    String toCoNLL() {
+    String toCoNLL(boolean useRoot) {
 
         // A single word may have multiple interpretations.
         // We need to extract the Lemma, Pos and features for each.
@@ -84,11 +92,25 @@ public class ItalianToken {
 
         // Grab all the parts for output in CoNLL format.
         // Token ID is not known at this level.
-        String wordform = this.source.getToken();
+        String wordform = this.getToken();
         String lemma = lemmas.size() > 1 ? lemmas.toString() : lemmas.get(1);
         String partOfSpeech = pos.size() > 1 ? pos.toString() : pos.get(1);
         String feat = features.size() > 1 ? features.toString() : features.get(1);
         String underscore = "_";
+
+        // Fill in dependency information.
+        String head = underscore;
+        if (this.head != null) {
+            head = this.head.tokenNumber+"";
+        }
+        else if (useRoot) {
+            head = 0 + "";
+        }
+        String depRel = underscore;
+        if (this.dependencyRelation != null) {
+            depRel = this.dependencyRelation.toString().replace("_", "+");
+        }
+
 
         // Add the info to the appropriate column.
         ArrayList<String> columns = new ArrayList<>();
@@ -97,13 +119,17 @@ public class ItalianToken {
         columns.add(partOfSpeech);  // C-POS
         columns.add(partOfSpeech);  // F-POS
         columns.add(feat);          // features
-        columns.add(underscore);    // Head
-        columns.add(underscore);    // DepRel
+        columns.add(head);    // Head
+        columns.add(depRel);    // DepRel
         columns.add(underscore);    // Expansions 1
         columns.add(underscore);    // Expansion 2
 
         // Return a tab separated string of all the CoNLL values.
         return StringUtils.join(columns, "\t");
+    }
+
+    public String toCoNLL() {
+        return toCoNLL(false);
     }
 
     public boolean agreesWith(ItalianToken other) {
@@ -121,6 +147,16 @@ public class ItalianToken {
         }
 
         // If no readings agreed, then return false;
+        return false;
+    }
+
+    // Checks to see if the token has AVERE as a lemma.
+    public boolean isAvere() {
+        for(ItalianReading reading : this.readings) {
+            if (reading.getLemma().equalsIgnoreCase("AVERE")) {
+                return true;
+            }
+        }
         return false;
     }
 }
