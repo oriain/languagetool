@@ -445,7 +445,7 @@ public class AgreementTest {
     @Test // Dependency Graph
     public void test1_VPPS_AGREE_incorrect() throws IOException {
         // I have explained the lesson and she has followed very carefully.
-        assertBad("Ho spiegato la lezione e lei ha seg\u00ADuita molto attentamente.");
+        assertBad("Ho spiegato la lezione e lei ha seguita molto attentamente.");
         // Detected two errors instead of one.
 
         // Error One: False Positive

@@ -1,19 +1,18 @@
 package org.languagetool;
 
 import org.languagetool.language.Italian;
+import org.languagetool.language.ItalianWithTaggerDelegate;
 import org.languagetool.rules.RuleMatch;
 import org.languagetool.rules.it.AgreementRule;
 import org.languagetool.tagging.it.CoNLL;
 import org.languagetool.tagging.it.ItalianSentence;
+import org.languagetool.tagging.it.ItalianTaggerDelegate;
 import org.languagetool.tagging.it.ItalianToken;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
 /**
  * Created by littl on 6/1/2016.
@@ -164,7 +163,92 @@ public class CeilingAnalysis {
             }
             results.TestResults.add("");
 
-        }
+        } // Finished iterating through all sentences.
+
+        return results;
+    }
+
+    CeilingAnalysisResults AnalyzeLevelTwo(String fileName, List<TestSentence> testSentences) throws IOException {
+        // Setup results object.
+        CeilingAnalysisResults results = new CeilingAnalysisResults();
+        results.ReportHeader = "Performing Level 2 Ceiling Analysis on test sentences with tokens and POS tags from ground truth data from '" + fileName + "'";
+
+        // Read in data from gold file.
+        List<ItalianSentence> sentences = CoNLL.loadItalianFile(fileName);
+
+        // We need to use a special classes for testing that wraps the "normal" classes.
+        // This will give us the ability to pass in tags for tokens from the gold file.
+        ItalianWithTaggerDelegate italianWithTaggerDelegate = new ItalianWithTaggerDelegate();
+        ItalianTaggerDelegate taggerDelegate = italianWithTaggerDelegate.getTagger();
+        JLanguageTool lt = new JLanguageTool(italianWithTaggerDelegate);
+
+        // Iterate through all the sentences.
+        for (int i = 0; i < sentences.size(); i++) {
+            ItalianSentence italianSentence = sentences.get(i);
+
+            // Reset sentence specific properties.
+            taggerDelegate.tokenIndex = 0;
+            taggerDelegate.tags.clear();
+            taggerDelegate.lemmas.clear();
+
+            // Use Tokens, Lemmas and Part-of-Speech tags from gold file.
+            List<String> tokens = new ArrayList<String>();
+            for (ItalianToken token : italianSentence.tokens) {
+                // Get the word
+                String word = token.getToken();
+
+                // Add the word to the tokens list.
+                tokens.add(word);
+
+                // Tokens from the gold file will only have a single lemms/POS.
+                // Add the info to the lookup table on the word tagger, which
+                // bypasses the normal dictionary lookup.
+                List<AnalyzedToken> readings = token.getReadings();
+                if (!readings.isEmpty()) {
+                    AnalyzedToken reading = readings.get(0);
+                    taggerDelegate.tags.add(reading.getPOSTag());
+                    taggerDelegate.lemmas.add(reading.getLemma());
+                }
+                else {
+                    /* TODO: What do we do if there is no POS tag or lemma? Guaranteed to
+                    exist with the 'Agreement Test.conl', but maybe not a future file... */
+                }
+            }
+
+            // Use LanguageTool to get the POS tags and dependency information.
+            AnalyzedSentence analyzedSentence = lt.getAnalyzedSentence(tokens);
+
+            // Even sentences (0, 2, 4, ...) represent sentences with an error in them.
+            // Odd sentences (1, 3, 5, ...) represent sentences with no errors.
+            int expectedErrorCount = (i + 1) % 2;
+
+            AgreementRule rule = new AgreementRule(ItalianResourceBundle);
+            RuleMatch[] matches = rule.match(analyzedSentence);
+
+            // Update the results object to know we tested another sentence.
+            results.TestCount++;
+            results.TestResults.add((i+1) + ": ");
+
+            // Track pass/fail statistics.
+            String testResult = "PASS: ";
+            if (matches.length == expectedErrorCount) {
+                if (expectedErrorCount > 0) results.IncorrectPassCount++;
+                else results.CorrectPassCount++;
+            }
+            else testResult = "FAIL: ";
+
+            // Include indication of whether a correct or incorrect sentence is being tested.
+            if (expectedErrorCount > 0) testResult = testResult + "(Incorrect) ";
+            else testResult = testResult + "(Correct) ";
+
+            // Store the results of the test.
+            results.TestResults.add(testResult + testSentences.get(i).Sentence);
+            for (RuleMatch match : matches) {
+                results.TestResults.add("RULE MATCHED: " + match.getMessage());
+            }
+            results.TestResults.add("");
+
+        } // Finished iterating through all sentences.
 
         return results;
     }

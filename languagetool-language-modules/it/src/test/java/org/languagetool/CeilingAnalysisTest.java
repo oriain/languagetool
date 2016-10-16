@@ -105,6 +105,10 @@ public class CeilingAnalysisTest {
 
     }
 
+    // 10/15/2016
+    // Nil -> Tok -> Tag -> Dep
+    // 103 -> 105 -> 96  -> 98
+
     @Test
     public void CeilingAnalysis() throws IOException {
         CeilingAnalysis ceilingAnalysis = new CeilingAnalysis();
@@ -115,8 +119,8 @@ public class CeilingAnalysisTest {
         CeilingAnalysisResults levelOneResults = ceilingAnalysis.AnalyzeLevelOne(fileName, AgreementTest.testSentences);
         levelOneResults.SaveReport("Agreement Ceiling Analysis Level 1.txt");
 
-        //CeilingAnalysisResults levelTwoResults = ceilingAnalysis.AnalyzeLevelZero(AgreementTest.testSentences);
-        //levelTwoResults.SaveReport("Agreement Ceiling Analysis Level 2.txt");
+        CeilingAnalysisResults levelTwoResults = ceilingAnalysis.AnalyzeLevelTwo(fileName, AgreementTest.testSentences);
+        levelTwoResults.SaveReport("Agreement Ceiling Analysis Level 2.txt");
 
         CeilingAnalysisResults levelThreeResults =  ceilingAnalysis.AnalyzeLevelThree(fileName, AgreementTest.testSentences);
         levelThreeResults.SaveReport("Agreement Ceiling Analysis Level 3.txt");

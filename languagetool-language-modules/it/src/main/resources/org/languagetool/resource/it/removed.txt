@@ -9,4 +9,4 @@ glieli	glieli	PRO-PERS-CLI-COM
 glielo	glielo	PRO-PERS-CLI-COM
 gliene	gliene	PRO-PERS-CLI-COM
 marciapiedi	marciapiedi	NOUN-M:p
-marciapiedi marciapiedi	NOUN-M:s
+marciapiedi	marciapiedi	NOUN-M:s

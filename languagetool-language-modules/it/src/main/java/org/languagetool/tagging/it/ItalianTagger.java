@@ -41,6 +41,11 @@ public class ItalianTagger extends BaseTagger {
     return "/it/added.txt";
   }
 
+  @Override
+  public String getManualRemovalsFileName() {
+    return "/it/removed.txt";
+  }
+
   public ItalianTagger() {
     super("/it/italian.dict", Locale.ITALIAN);
   }
