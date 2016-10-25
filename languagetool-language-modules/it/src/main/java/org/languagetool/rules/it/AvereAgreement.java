@@ -17,7 +17,7 @@ import java.util.*;
 class AvereAgreement extends AgreementRelationship {
     private AgreementRule rule;
     private static HashSet<String> directObjectPronouns = new HashSet<>(Arrays.asList(
-            "lo",       "la",       "li",       "le",                   //"ne",
+            "lo",       "la",       "li",       "le",       "l'",       //"ne",
             "melo",     "mela",     "meli",     "mele",                 //"mene",
             "telo",     "tela",     "teli",     "tele",                 //"tene",
             "selo",     "sela",     "seli",     "sele",                 //"sene",
