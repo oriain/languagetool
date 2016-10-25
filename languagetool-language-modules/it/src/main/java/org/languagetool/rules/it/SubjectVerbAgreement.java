@@ -10,6 +10,8 @@ import org.languagetool.tagging.it.tag.PartOfSpeech;
  * Created by littl on 5/27/2016.
  */
 class SubjectVerbAgreement extends AgreementRelationship {
+    // TODO: Verbs (and modals, etc) that are direct children of the
+    // top verb must also participate in the subject verb agreement rules.
 
     SubjectVerbAgreement() {
         this.description = "The subject and verb do not agree.";
@@ -17,15 +19,24 @@ class SubjectVerbAgreement extends AgreementRelationship {
         // Child
         this.childPos.add(PartOfSpeech.NOUN);
         this.childPos.add(PartOfSpeech.ART);//YES-implied, should we check actual attachment?
+        this.childPos.add(PartOfSpeech.ARTPRE);
+
         this.childPos.add(PartOfSpeech.PRO_DEMO);
         this.childPos.add(PartOfSpeech.PRO_INDEF);
-        this.childPos.add(PartOfSpeech.PRO_NUM);
         this.childPos.add(PartOfSpeech.PRO_PERS);
         this.childPos.add(PartOfSpeech.PRO_WH);
-        this.childPos.add(PartOfSpeech.WH);
-        this.childPos.add(PartOfSpeech.WH_CHE);
-        // What is an example of Pronoun-Numeral
+        this.childPos.add(PartOfSpeech.PRO_POSS);
+
+        this.childPos.add(PartOfSpeech.DET_DEMO);
+        this.childPos.add(PartOfSpeech.DET_POSS);
+        this.childPos.add(PartOfSpeech.DET_WH);
+        this.childPos.add(PartOfSpeech.DET_INDEF);
+
+        // Invariable and don't need to be checked.
+        //this.childPos.add(PartOfSpeech.DET_NUM_CARD);
         //this.childPos.add(PartOfSpeech.PRO_NUM);
+        //this.childPos.add(PartOfSpeech.WH);
+        //this.childPos.add(PartOfSpeech.WH_CHE);
 
         // Subjects
         this.relation.add(DependencyRelation.SUBJ);
@@ -37,6 +48,7 @@ class SubjectVerbAgreement extends AgreementRelationship {
 
         // Parent
         this.parentPos.add(PartOfSpeech.VER);
+        this.parentPos.add(PartOfSpeech.MOD);
 
         // TODO: Look up which sentences use this.
         //DependencyRelation.SUBJ_INDCOMPL;
@@ -51,7 +63,7 @@ class SubjectVerbAgreement extends AgreementRelationship {
 
     @Override
     public boolean checkForExemption(ItalianToken child, ItalianToken parent) {
-        return checkForCoordinatingConjunction(child) || checkForAuxiliaryVerbEssere(parent);
+        return checkForCoordinatingConjunction(child) || checkForAuxiliaryVerbAvere(parent);
     }
 
     // If the verb is a past participle verb, and it's connected to an auxiliary verb that does has AVERE as it's
@@ -59,7 +71,7 @@ class SubjectVerbAgreement extends AgreementRelationship {
     // past participle verb is connected to an auxiliary verb with the lemma of AVERE, then must take the masculine
     // singular form, unless it's also connected to one of the direct object pronouns LO, LA, LE, LI, in which case it
     // agrees with those direct object pronouns in gender and number.
-    private boolean checkForAuxiliaryVerbEssere(ItalianToken parent) {
+    private boolean checkForAuxiliaryVerbAvere(ItalianToken parent) {
         for (ItalianToken child : parent.getChildren()) {
             if (DependencyRelation.isAuxiliary(child) && child.isAvere()) return true;
         }

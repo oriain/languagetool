@@ -32,8 +32,13 @@ scemo	scemo	NOUN-M:s
 vista	visto	VER:part+past+s+f
 viste	visto	VER:part+past+p+f
 visti	visto	VER:part+past+p+m
-visto	visto	VER:part+past+s+m
-visto	vistare	VER:ind+pres+1+s
+visto	vedere	VER:part+past+s+m
 dolgono	dovere	VER:ind+pres+3+p
 gioventù	gioventù	NOUN-F:s
 si	si	ADV
+quattro	quattro	NOUN-F:s
+sette	setta	NOUN-F:s
+sette	setta	NOUN-M:p
+sette	setta	NOUN-M:s
+loro	loro	PRO-POSS-F-P
+loro	loro	PRO-POSS-M-P

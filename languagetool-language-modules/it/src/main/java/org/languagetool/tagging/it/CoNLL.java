@@ -59,6 +59,7 @@ public class CoNLL {
                         int tokenNumber = entry.getKey();
                         ItalianToken token = tokens.get(tokenNumber-1);
                         token.head = tokens.get(headNumber-1);
+                        token.head.addChild(token);
                     }
                 }
                 // Clear the dependencies hashmap for the next sentence.
@@ -88,6 +89,7 @@ public class CoNLL {
 
         // This is duplicate code from the if statement above.
         // Needed to finish handling the last sentence
+        // Should probably be put into its own function.
         if (!tokens.isEmpty()) {
 
             // Connect the dependencies since the sentence has ended.
@@ -202,7 +204,8 @@ public class CoNLL {
         ItalianToken italianToken = ItalianToken.create(analyzedTokenReadings, tokenNumber);
 
         // Parse the dependency relation
-        try { italianToken.dependencyRelation = DependencyRelation.valueOf(depRel); }
+        String sanitizedDepRel = depRel.replace("*", "_").replace("+", "_").replace("%", "_").replace("/", "_");
+        try { italianToken.dependencyRelation = DependencyRelation.valueOf(sanitizedDepRel); }
         catch (IllegalArgumentException ignored) { /* Do nothing?... */ }
 
         return italianToken;
@@ -245,39 +248,85 @@ public class CoNLL {
         List<Integer> incorrectExpansionSlots = new ArrayList<Integer>();
 
         int lineNo = 1;
+        int tokenCount = 0;
+        List<Integer> heads = new ArrayList<Integer>();
         for( String line : (Iterable<String>) lines::iterator ) {
             // A line may either be blank or contain 10 tab separated values.
             if (line.equals("")) {
+
+                // Validate that a token doesn't have a head
+                // that is out of bounds of the sentence.
+                for (Integer head : heads) {
+                    if (head > tokenCount) {
+                        incorrectDependencyNumbers.add(lineNo);
+                    }
+                }
+
+                // If the head numbers are fine, clear the tokenCount and heads list.
+                tokenCount = 0;
+                heads.clear();
+
+                // Increment line number and move on.
                 lineNo++;
                 continue;
             }
+
+            // If it's not an empty line, then we must have a new token.
+            tokenCount++;
+
+            // Each line must have ten tab-separated values.
             String[] columns = line.split("\t");
-            if (columns.length == 10) {
-                // Validate Token Number
-                try {
-                    Integer.parseInt(columns[0]);
-                }
-                catch (NumberFormatException e) {
-                    incorrectTokenNumbers.add(lineNo);
-                }
-
-                // Validate Dependency Number
-                try {
-                    Integer.parseInt(columns[6]);
-                }
-                catch (NumberFormatException e) {
-                    incorrectDependencyNumbers.add(lineNo);
-                }
-
-                // Validate last two expansion slots.
-
-                if (!"_".equals(columns[8]) || !"_".equals(columns[9]))
-                    incorrectExpansionSlots.add(lineNo);
-
+            if (columns.length != 10) {
+                incorrectLines.add(lineNo);
                 lineNo++;
+
+                // Don't continue validating this line if values are missing.
                 continue;
             }
-            incorrectLines.add(lineNo);
+
+            // Validate Token Number is an integer.
+            int tokenNumber = -1;
+            try {
+                tokenNumber = Integer.parseInt(columns[0]);
+
+                // Also validate that the token number has the correct value.
+                if (tokenNumber != tokenCount) {
+                    incorrectTokenNumbers.add(lineNo);
+                    lineNo++;
+
+                    // Since we check the head value against the token number, skip
+                    // processing the rest of the line if the token number is wrong.
+                    continue;
+                }
+            }
+            catch (NumberFormatException e) {
+                incorrectTokenNumbers.add(lineNo);
+                lineNo++;
+
+                // Since we check the head value against the token number, skip
+                // processing the rest of the line if the token number is wrong.
+                continue;
+            }
+
+            // Validate Dependency Number
+            int head = -1;
+            try {
+                head = Integer.parseInt(columns[6]);
+                if (head == tokenNumber) {
+                    incorrectDependencyNumbers.add(lineNo);
+                    lineNo++;
+                    continue;
+                }
+            }
+            catch (NumberFormatException e) {
+                incorrectDependencyNumbers.add(lineNo);
+            }
+
+            // Validate last two expansion slots.
+            if (!"_".equals(columns[8]) || !"_".equals(columns[9])){
+                incorrectExpansionSlots.add(lineNo);
+            }
+
             lineNo++;
         }
 

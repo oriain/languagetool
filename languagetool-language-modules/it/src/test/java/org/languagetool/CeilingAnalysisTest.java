@@ -2,6 +2,7 @@ package org.languagetool;
 
 import org.apache.commons.lang.StringUtils;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.languagetool.rules.RuleMatch;
 import org.languagetool.rules.it.AgreementRule;
@@ -28,7 +29,10 @@ import static org.junit.Assert.assertTrue;
 public class CeilingAnalysisTest {
     private static ResourceBundle ItalianResourceBundle = TestTools.getMessages("it");
     private static AgreementRule rule = new AgreementRule(ItalianResourceBundle);
-    private static String fileName = "Agreement Test.conl";
+//    private static String fileName = "Agreement Test Gold File (with commas).conl";
+    private static String fileName = "Agreement Test Gold File Constrained.conl";
+    private static String logFileName = "Agreement Ceiling Analysis Level ";
+    private static CeilingAnalysis ceilingAnalysis = new CeilingAnalysis();
 
     private void assertGood(AnalyzedSentence sentence) throws IOException {
         RuleMatch[] matches = rule.match(sentence);
@@ -55,6 +59,7 @@ public class CeilingAnalysisTest {
         }
     }
 
+    @Ignore
     @Test
     public void SplitFeaturesFromPOS()
     {
@@ -109,20 +114,49 @@ public class CeilingAnalysisTest {
     // Nil -> Tok -> Tag -> Dep
     // 103 -> 105 -> 96  -> 98
 
+    // 10/16/2016 (with commas)
+    // 103 -> 105 -> 97  -> 98
+
+    // 10/17/2106
+    // 103 -> 105 -> 97  -> 98
+    // 103 -> 105 -> 97  -> 95
+
+    // 10/18/2016
+    // 0.558 -> 0.571 -> 0.474 -> 0.696
+
     @Test
     public void CeilingAnalysis() throws IOException {
-        CeilingAnalysis ceilingAnalysis = new CeilingAnalysis();
+        CeilingAnalysisLevelZero();
+        CeilingAnalysisLevelOne();
+        CeilingAnalysisLevelTwo();
+        CeilingAnalysisLevelThree();
+    }
 
+    @Test
+    public void CeilingAnalysisLevelZero() throws IOException {
         CeilingAnalysisResults levelZeroResults = ceilingAnalysis.AnalyzeLevelZero(AgreementTest.testSentences);
-        levelZeroResults.SaveReport("Agreement Ceiling Analysis Level 0.txt");
+        levelZeroResults.SaveReport(logFileName + "0.txt");
+        levelZeroResults.SaveConl(logFileName + "0.conl");
+    }
 
+    @Test
+    public void CeilingAnalysisLevelOne() throws IOException {
         CeilingAnalysisResults levelOneResults = ceilingAnalysis.AnalyzeLevelOne(fileName, AgreementTest.testSentences);
-        levelOneResults.SaveReport("Agreement Ceiling Analysis Level 1.txt");
+        levelOneResults.SaveReport(logFileName + "1.txt");
+        levelOneResults.SaveConl(logFileName + "1.conl");
+    }
 
+    @Test
+    public void CeilingAnalysisLevelTwo() throws IOException {
         CeilingAnalysisResults levelTwoResults = ceilingAnalysis.AnalyzeLevelTwo(fileName, AgreementTest.testSentences);
-        levelTwoResults.SaveReport("Agreement Ceiling Analysis Level 2.txt");
+        levelTwoResults.SaveReport(logFileName + "2.txt");
+        levelTwoResults.SaveConl(logFileName + "2.conl");
+    }
 
+    @Test
+    public void CeilingAnalysisLevelThree() throws IOException {
         CeilingAnalysisResults levelThreeResults =  ceilingAnalysis.AnalyzeLevelThree(fileName, AgreementTest.testSentences);
-        levelThreeResults.SaveReport("Agreement Ceiling Analysis Level 3.txt");
+        levelThreeResults.SaveReport(logFileName + "3.txt");
+        levelThreeResults.SaveConl(logFileName + "3.conl");
     }
 }

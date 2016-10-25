@@ -45,7 +45,7 @@ public class ItalianSentence {
         this.tokens = italianTokens.toArray(new ItalianToken[italianTokens.size()]);
     }
 
-    String[] toCoNLL(boolean useRoot) {
+    public String[] toCoNLL(boolean useRoot) {
         ArrayList<String> wordLines = new ArrayList<>();
 
         // Output the token number and the rest of the token

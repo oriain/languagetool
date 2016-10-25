@@ -191,11 +191,15 @@ public class ItalianReading {
                 && (!this.hasDegree()  || !other.hasDegree()  ||
                 this.degree.toString().toLowerCase().equals(other.degree.toString().toLowerCase()))
 
-                && (!this.hasMood()    || !other.hasMood()    ||
-                this.mood.toString().toLowerCase().equals(other.mood.toString().toLowerCase()))
+                // POS dictionary does not encode mood correctly.
+                // Disable mood until for now.
+                // (Also, mood doesn't require agreement in the way gender or number do.)
+                //&& (!this.hasMood()    || !other.hasMood()    ||
+                //this.mood.toString().toLowerCase().equals(other.mood.toString().toLowerCase()))
 
-                && (!this.hasTense()   || !other.hasTense()   ||
-                this.tense.toString().toLowerCase().equals(other.tense.toString().toLowerCase()))
+                // Tense also does not require agreement in the way gender or number do.
+                //&& (!this.hasTense()   || !other.hasTense()   ||
+                //this.tense.toString().toLowerCase().equals(other.tense.toString().toLowerCase()))
 
                 && (!this.hasClitics() || !other.hasClitics() ||
                 this.clitics.toString().toLowerCase().equals(other.clitics.toString().toLowerCase()))

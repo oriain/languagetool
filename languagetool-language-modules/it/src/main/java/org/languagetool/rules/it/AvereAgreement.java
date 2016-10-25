@@ -83,10 +83,10 @@ class AvereAgreement extends AgreementRelationship {
             ItalianToken parent = child.head;
             if (parent == null) continue;
 
-            // Get VERB readings
+            // Get VERB or modal verb readings
             List<ItalianReading> parentReadings = new ArrayList<>();
             for (ItalianReading parentReading : parent.readings) {
-                if (parentReading.pos == PartOfSpeech.VER) {
+                if (parentReading.pos == PartOfSpeech.VER || parentReading.pos == PartOfSpeech.MOD) {
                     parentReadings.add(parentReading);
                 }
             }

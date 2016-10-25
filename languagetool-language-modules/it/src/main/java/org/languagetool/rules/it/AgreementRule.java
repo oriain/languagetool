@@ -1,6 +1,7 @@
 package org.languagetool.rules.it;
 
 import org.languagetool.AnalyzedSentence;
+import org.languagetool.language.Italian;
 import org.languagetool.rules.Rule;
 import org.languagetool.rules.RuleMatch;
 import org.languagetool.synthesis.ItalianSynthesizer;
@@ -31,6 +32,9 @@ public class AgreementRule extends Rule {
         // Construct subject-verb agreement
         AgreementRelationship subjectVerbAgreement = new SubjectVerbAgreement();
 
+        // Construct modal-auxiliary agreement
+        AgreementRelationship modalAuxiliaryAgreement = new ModalAuxiliaryAgreement();
+
         // Construct noun-adjective agreement
         AgreementRelationship nounAdjectiveAgreement = new AgreementRelationship();
         nounAdjectiveAgreement.description = "The adjective and the noun it modifies do not agree.";
@@ -43,17 +47,31 @@ public class AgreementRule extends Rule {
         nounDeterminerAgreement.childPos.add(PartOfSpeech.NOUN);
         nounDeterminerAgreement.relation.add(DependencyRelation.ARG);
         nounDeterminerAgreement.description = "The noun and the determiner it modifies do not agree.";
+
+        nounDeterminerAgreement.parentPos.add(PartOfSpeech.ART);
+        nounDeterminerAgreement.parentPos.add(PartOfSpeech.ARTPRE);
+
+        nounDeterminerAgreement.parentPos.add(PartOfSpeech.PRO_DEMO);
+        nounDeterminerAgreement.parentPos.add(PartOfSpeech.PRO_INDEF);
+        nounDeterminerAgreement.parentPos.add(PartOfSpeech.PRO_PERS);
+        nounDeterminerAgreement.parentPos.add(PartOfSpeech.PRO_WH);
+        nounDeterminerAgreement.parentPos.add(PartOfSpeech.PRO_POSS);
+
         nounDeterminerAgreement.parentPos.add(PartOfSpeech.DET_DEMO);
         nounDeterminerAgreement.parentPos.add(PartOfSpeech.DET_POSS);
         nounDeterminerAgreement.parentPos.add(PartOfSpeech.DET_WH);
         nounDeterminerAgreement.parentPos.add(PartOfSpeech.DET_INDEF);
-        nounDeterminerAgreement.parentPos.add(PartOfSpeech.DET_NUM_CARD);
-        nounDeterminerAgreement.parentPos.add(PartOfSpeech.ART);
-        nounDeterminerAgreement.parentPos.add(PartOfSpeech.ARTPRE);
+
+        // Invariable and don't need to be checked.
+        //nounDeterminerAgreement.parentPos.add(PartOfSpeech.DET_NUM_CARD);
+        //nounDeterminerAgreement.parentPos.add(PartOfSpeech.PRO_NUM);
+        //nounDeterminerAgreement.parentPos.add(PartOfSpeech.WH);
+        //nounDeterminerAgreement.parentPos.add(PartOfSpeech.WH_CHE);
 
         // Add the relationships whose agreement needs to be checked.
         relationships = new ArrayList<>();
         relationships.add(subjectVerbAgreement);
+        relationships.add(modalAuxiliaryAgreement);
         relationships.add(nounAdjectiveAgreement);
         relationships.add(nounDeterminerAgreement);
     }
@@ -111,6 +129,10 @@ public class AgreementRule extends Rule {
                 // then there is no agreement to be checked.
                 ItalianToken parent = child.head;
                 if (parent == null) continue;
+
+                // If the parent of the verb is a modal verb, then the verb is probably an infinitive, in
+                // which case we really should be checking agreement between the subject and the modal verb.
+                if (parent.head != null && parent.head.isModal()) parent = parent.head;
 
                 // Otherwise the parent token's POS must also be covered by the agreement relationship type.
                 ItalianReading[] validParentReadings = relationship.getValidParentReadings(parent);

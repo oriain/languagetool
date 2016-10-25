@@ -89,6 +89,9 @@ public class CeilingAnalysis {
             results.TestCount++;
             results.TestResults.add((i+1) + ": ");
 
+            // Save the analyzed data for reporting / analysis.
+            results.LogConlData(analyzedSentence);
+
             // Track pass/fail statistics.
             String testResult = "PASS: ";
             if (matches.length == testCase.ExpectedErrorCount) {
@@ -135,7 +138,9 @@ public class CeilingAnalysis {
 
             // Even sentences (0, 2, 4, ...) represent sentences with an error in them.
             // Odd sentences (1, 3, 5, ...) represent sentences with no errors.
-            int expectedErrorCount = (i + 1) % 2;
+            //int expectedErrorCount = (i + 1) % 2;
+            TestSentence testSentence = testSentences.get(i);
+            int expectedErrorCount = testSentence.ExpectedErrorCount;
 
             AgreementRule rule = new AgreementRule(ItalianResourceBundle);
             RuleMatch[] matches = rule.match(analyzedSentence);
@@ -143,6 +148,9 @@ public class CeilingAnalysis {
             // Update the results object to know we tested another sentence.
             results.TestCount++;
             results.TestResults.add((i+1) + ": ");
+
+            // Save the analyzed data for reporting / analysis.
+            results.LogConlData(analyzedSentence);
 
             // Track pass/fail statistics.
             String testResult = "PASS: ";
@@ -157,7 +165,7 @@ public class CeilingAnalysis {
             else testResult = testResult + "(Correct) ";
 
             // Store the results of the test.
-            results.TestResults.add(testResult + testSentences.get(i).Sentence);
+            results.TestResults.add(testResult + testSentence.Sentence);
             for (RuleMatch match : matches) {
                 results.TestResults.add("RULE MATCHED: " + match.getMessage());
             }
@@ -220,7 +228,9 @@ public class CeilingAnalysis {
 
             // Even sentences (0, 2, 4, ...) represent sentences with an error in them.
             // Odd sentences (1, 3, 5, ...) represent sentences with no errors.
-            int expectedErrorCount = (i + 1) % 2;
+            //int expectedErrorCount = (i + 1) % 2;
+            TestSentence testSentence = testSentences.get(i);
+            int expectedErrorCount = testSentence.ExpectedErrorCount;
 
             AgreementRule rule = new AgreementRule(ItalianResourceBundle);
             RuleMatch[] matches = rule.match(analyzedSentence);
@@ -228,6 +238,9 @@ public class CeilingAnalysis {
             // Update the results object to know we tested another sentence.
             results.TestCount++;
             results.TestResults.add((i+1) + ": ");
+
+            // Save the analyzed data for reporting / analysis.
+            results.LogConlData(analyzedSentence);
 
             // Track pass/fail statistics.
             String testResult = "PASS: ";
@@ -242,7 +255,7 @@ public class CeilingAnalysis {
             else testResult = testResult + "(Correct) ";
 
             // Store the results of the test.
-            results.TestResults.add(testResult + testSentences.get(i).Sentence);
+            results.TestResults.add(testResult + testSentence.Sentence);
             for (RuleMatch match : matches) {
                 results.TestResults.add("RULE MATCHED: " + match.getMessage());
             }
@@ -264,15 +277,22 @@ public class CeilingAnalysis {
         // Evaluate the data.
         for (int i=0; i<sentences.size(); i++) {
             ItalianSentence sentence = sentences.get(i);
-            results.TestCount++;
-            results.TestResults.add((i+1) + ": ");
 
             // Even sentences (0, 2, 4, ...) represent sentences with an error in them.
             // Odd sentences (1, 3, 5, ...) represent sentences with no errors.
-            int expectedErrorCount = (i + 1) % 2;
+            //int expectedErrorCount = (i + 1) % 2;
+            TestSentence testSentence = testSentences.get(i);
+            int expectedErrorCount = testSentence.ExpectedErrorCount;
 
             AgreementRule rule = new AgreementRule(ItalianResourceBundle);
             RuleMatch[] matches = rule.match(sentence);
+
+            // Update the results object to know we tested another sentence.
+            results.TestCount++;
+            results.TestResults.add((i+1) + ": ");
+
+            // Save the analyzed data for reporting / analysis.
+            results.LogConlData(sentence);
 
             // Track pass/fail statistics.
             String result = "PASS: ";
@@ -287,7 +307,7 @@ public class CeilingAnalysis {
             else result = result + "(Correct) ";
 
             // Store the results.
-            results.TestResults.add(result + testSentences.get(i).Sentence);
+            results.TestResults.add(result + testSentence.Sentence);
             for (RuleMatch match : matches) {
                 results.TestResults.add("RULE MATCHED: " + match.getMessage());
             }

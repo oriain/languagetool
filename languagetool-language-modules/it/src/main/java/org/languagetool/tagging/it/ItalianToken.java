@@ -4,6 +4,7 @@ import org.apache.commons.lang.StringUtils;
 import org.languagetool.AnalyzedToken;
 import org.languagetool.AnalyzedTokenReadings;
 import org.languagetool.tagging.it.tag.DependencyRelation;
+import org.languagetool.tagging.it.tag.PartOfSpeech;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -156,6 +157,13 @@ public class ItalianToken extends AnalyzedTokenReadings {
             if (reading.getLemma().equalsIgnoreCase("AVERE")) {
                 return true;
             }
+        }
+        return false;
+    }
+
+    public boolean isModal() {
+        for (ItalianReading reading : this.readings) {
+            if (reading.pos == PartOfSpeech.MOD) return true;
         }
         return false;
     }
