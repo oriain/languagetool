@@ -4,15 +4,14 @@ import org.languagetool.language.Italian;
 import org.languagetool.language.ItalianWithTaggerDelegate;
 import org.languagetool.rules.RuleMatch;
 import org.languagetool.rules.it.AgreementRule;
+import org.languagetool.rules.it.VerbAgreementRule;
 import org.languagetool.tagging.it.CoNLL;
 import org.languagetool.tagging.it.ItalianSentence;
 import org.languagetool.tagging.it.ItalianTaggerDelegate;
 import org.languagetool.tagging.it.ItalianToken;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 
 /**
  * Created by littl on 6/1/2016.
@@ -83,7 +82,15 @@ public class CeilingAnalysis {
 
             // Instantiate the AgreementRule and check for matches.
             AgreementRule rule = new AgreementRule(italianResourceBundle);
-            RuleMatch[] matches = rule.match(analyzedSentence);
+            RuleMatch[] agreementMatches = rule.match(analyzedSentence);
+
+            VerbAgreementRule verbAgreementRule = new VerbAgreementRule(italianResourceBundle);
+            RuleMatch[] verbMatches = verbAgreementRule.match(analyzedSentence);
+
+            // Combine the results of the rule matches.
+            RuleMatch[] matches = new RuleMatch[agreementMatches.length + verbMatches.length];
+            System.arraycopy(agreementMatches, 0, matches, 0, agreementMatches.length);
+            System.arraycopy(verbMatches, 0, matches, agreementMatches.length, verbMatches.length);
 
             // Update the results object to know we tested another sentence.
             results.TestCount++;
@@ -120,6 +127,11 @@ public class CeilingAnalysis {
         CeilingAnalysisResults results = new CeilingAnalysisResults();
         results.ReportHeader = "Performing Level 1 Ceiling Analysis on test sentences with tokens from ground truth data from '" + fileName + "'";
 
+        // Setup LanguageTool and Resource bundle. These object are needed
+        // for tokenizing, tagging and generating dependency information.
+        JLanguageTool lt = getJLanguageTool();
+        ResourceBundle italianResourceBundle = getResourceBundle();
+
         // Read in data from gold file.
         List<ItalianSentence> sentences = CoNLL.loadItalianFile(fileName);
 
@@ -142,8 +154,16 @@ public class CeilingAnalysis {
             TestSentence testSentence = testSentences.get(i);
             int expectedErrorCount = testSentence.ExpectedErrorCount;
 
-            AgreementRule rule = new AgreementRule(ItalianResourceBundle);
-            RuleMatch[] matches = rule.match(analyzedSentence);
+            AgreementRule rule = new AgreementRule(italianResourceBundle);
+            RuleMatch[] agreementMatches = rule.match(analyzedSentence);
+
+            VerbAgreementRule verbAgreementRule = new VerbAgreementRule(italianResourceBundle);
+            RuleMatch[] verbMatches = verbAgreementRule.match(analyzedSentence);
+
+            // Combine the results of the rule matches.
+            RuleMatch[] matches = new RuleMatch[agreementMatches.length + verbMatches.length];
+            System.arraycopy(agreementMatches, 0, matches, 0, agreementMatches.length);
+            System.arraycopy(verbMatches, 0, matches, agreementMatches.length, verbMatches.length);
 
             // Update the results object to know we tested another sentence.
             results.TestCount++;
@@ -189,6 +209,7 @@ public class CeilingAnalysis {
         ItalianWithTaggerDelegate italianWithTaggerDelegate = new ItalianWithTaggerDelegate();
         ItalianTaggerDelegate taggerDelegate = italianWithTaggerDelegate.getTagger();
         JLanguageTool lt = new JLanguageTool(italianWithTaggerDelegate);
+        ResourceBundle italianResourceBundle = getResourceBundle();
 
         // Iterate through all the sentences.
         for (int i = 0; i < sentences.size(); i++) {
@@ -232,8 +253,16 @@ public class CeilingAnalysis {
             TestSentence testSentence = testSentences.get(i);
             int expectedErrorCount = testSentence.ExpectedErrorCount;
 
-            AgreementRule rule = new AgreementRule(ItalianResourceBundle);
-            RuleMatch[] matches = rule.match(analyzedSentence);
+            AgreementRule rule = new AgreementRule(italianResourceBundle);
+            RuleMatch[] agreementMatches = rule.match(analyzedSentence);
+
+            VerbAgreementRule verbAgreementRule = new VerbAgreementRule(italianResourceBundle);
+            RuleMatch[] verbMatches = verbAgreementRule.match(analyzedSentence);
+
+            // Combine the results of the rule matches.
+            RuleMatch[] matches = new RuleMatch[agreementMatches.length + verbMatches.length];
+            System.arraycopy(agreementMatches, 0, matches, 0, agreementMatches.length);
+            System.arraycopy(verbMatches, 0, matches, agreementMatches.length, verbMatches.length);
 
             // Update the results object to know we tested another sentence.
             results.TestCount++;
@@ -274,6 +303,8 @@ public class CeilingAnalysis {
         // Read in data from gold file.
         List<ItalianSentence> sentences = CoNLL.loadItalianFile(fileName);
 
+        ResourceBundle italianResourceBundle = getResourceBundle();
+
         // Evaluate the data.
         for (int i=0; i<sentences.size(); i++) {
             ItalianSentence sentence = sentences.get(i);
@@ -284,8 +315,16 @@ public class CeilingAnalysis {
             TestSentence testSentence = testSentences.get(i);
             int expectedErrorCount = testSentence.ExpectedErrorCount;
 
-            AgreementRule rule = new AgreementRule(ItalianResourceBundle);
-            RuleMatch[] matches = rule.match(sentence);
+            AgreementRule rule = new AgreementRule(italianResourceBundle);
+            RuleMatch[] agreementMatches = rule.match(sentence);
+
+            VerbAgreementRule verbAgreementRule = new VerbAgreementRule(italianResourceBundle);
+            RuleMatch[] verbMatches = verbAgreementRule.match(sentence);
+
+            // Combine the results of the rule matches.
+            RuleMatch[] matches = new RuleMatch[agreementMatches.length + verbMatches.length];
+            System.arraycopy(agreementMatches, 0, matches, 0, agreementMatches.length);
+            System.arraycopy(verbMatches, 0, matches, agreementMatches.length, verbMatches.length);
 
             // Update the results object to know we tested another sentence.
             results.TestCount++;

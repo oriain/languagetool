@@ -34,10 +34,7 @@ import org.languagetool.parsers.DependencyParserException;
 import org.languagetool.parsers.ItalianMaltParser;
 import org.languagetool.parsers.MaltParser;
 import org.languagetool.rules.*;
-import org.languagetool.rules.it.AgreementRule;
-import org.languagetool.rules.it.ItalianConfusionProbabilityRule;
-import org.languagetool.rules.it.ItalianWordRepeatRule;
-import org.languagetool.rules.it.MorfologikItalianSpellerRule;
+import org.languagetool.rules.it.*;
 
 import org.languagetool.synthesis.ItalianSynthesizer;
 import org.languagetool.synthesis.Synthesizer;
@@ -128,7 +125,8 @@ public class Italian extends Language implements AutoCloseable {
             new UppercaseSentenceStartRule(messages, this),
             new ItalianWordRepeatRule(messages, this),
             new MultipleWhitespaceRule(messages, this),
-            new AgreementRule(messages)
+            new AgreementRule(messages),
+            new VerbAgreementRule(messages)
     );
   }
 

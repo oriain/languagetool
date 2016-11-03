@@ -15,7 +15,7 @@ import java.util.TreeMap;
  */
 public class ItalianReading {
     public AnalyzedToken analyzedToken;
-    ItalianReading(AnalyzedToken analyzedToken) {
+    public ItalianReading(AnalyzedToken analyzedToken) {
         this.analyzedToken = analyzedToken;
         parsePosTag();
     }

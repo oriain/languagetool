@@ -70,7 +70,7 @@ public class AgreementRule extends Rule {
 
         // Add the relationships whose agreement needs to be checked.
         relationships = new ArrayList<>();
-        relationships.add(subjectVerbAgreement);
+        //relationships.add(subjectVerbAgreement);
         relationships.add(modalAuxiliaryAgreement);
         relationships.add(nounAdjectiveAgreement);
         relationships.add(nounDeterminerAgreement);
@@ -129,6 +129,8 @@ public class AgreementRule extends Rule {
                 // then there is no agreement to be checked.
                 ItalianToken parent = child.head;
                 if (parent == null) continue;
+
+                // NOTE: The modal (or main verb) is not the only verb that needs to be checked for agreement.
 
                 // If the parent of the verb is a modal verb, then the verb is probably an infinitive, in
                 // which case we really should be checking agreement between the subject and the modal verb.
@@ -227,10 +229,11 @@ public class AgreementRule extends Rule {
 //            } // End of subject analysis.
 //        } // Done checking all the tokens in a sentence.
 
-        // We also need to check for AvereAgreemnt.
-        AvereAgreement avereAgreement = new AvereAgreement(this);
-        RuleMatch[] match = avereAgreement.match(sentence);
-        Collections.addAll(ruleMatches, match);
+        // We are now handling this in the separate VerbAgreementRule.
+        //// We also need to check for AvereAgreemnt.
+        //AvereAgreement avereAgreement = new AvereAgreement(this);
+        //RuleMatch[] match = avereAgreement.match(sentence);
+        //Collections.addAll(ruleMatches, match);
 
         return ruleMatches.size() < 1;
     }
