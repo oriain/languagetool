@@ -126,11 +126,13 @@ public class CeilingAnalysisTest {
     // 10/18/2016: 0.558 -> 0.571 -> 0.474 -> 0.696
     // 10/25/2016: 0.500 -> 0.500 -> 0.500 -> 0.929
 
-    // After rule verb agreement rule rewrite.
+    // After verb agreement rule rewrite.
     // Stages:       0        1        2        3
     // We provide:  nil     token     POS      Dep
     // 11/01/2016: 0.171 -> 0.176 -> 0.182 -> 0.182
     // 11/02/2016: 0.475 -> 0.480 -> 0.300 -> 0.522
+    // 11/02/2016: 0.519 -> 0.528 -> 0.408 -> 0.571
+    // 11/02/2016: 0.538 -> 0.549 -> 0.490 -> 0.769
 
     @Test
     public void CeilingAnalysis() throws IOException {

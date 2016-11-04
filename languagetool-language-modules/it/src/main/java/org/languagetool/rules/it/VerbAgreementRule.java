@@ -96,14 +96,17 @@ public class VerbAgreementRule extends Rule {
     public RuleMatch[] match(ItalianSentence sentence) throws IOException {
         List<RuleMatch> ruleMatches = new ArrayList<RuleMatch>();
 
-        // We will iterate over the tokens in a sentence to find pairs of tokens that need to agree.
-        List<AgreementPair> agreementPairs = new ArrayList<AgreementPair>();
-
         // Loop through the tokens to identify the subject, direct object pronoun and verbs.
         for (ItalianToken child : sentence.tokens) {
+            // We will iterate over the tokens in a sentence to find pairs of tokens that need to agree.
+            List<AgreementPair> agreementPairs = new ArrayList<AgreementPair>();
 
             // The subject must have a parent (usually a verb of some kind).
             if (child.head == null) continue;
+
+            // TODO: We need to accomodate the scenario where there is no subject in the sentence,
+            // but there is anavere auxiliary and verb with no direct object pronoun,
+            // meaning the verb should be singular and masculine.
 
             // Check for subject dependency relations: SUBJ, SUBJ_OBJ, OBJ_SUBJ, PREDCOMPL_OBJ
             if (!getSubjDepRel().contains(child.dependencyRelation)) continue;
@@ -111,6 +114,16 @@ public class VerbAgreementRule extends Rule {
             // The subject will control agreement for one or more tokens in a sentence.
             List<ItalianReading> subjectReadings = new ArrayList<ItalianReading>();
 
+            // Was trying to use noun, but sometimes there is only a personal pronoun. So we'll use
+            // the token who dependency relation is a subject and is either an article or the noun.
+            for (ItalianReading reading : child.readings) {
+                // A handful of words can be both a noun and an article: cosa, dei, nei, uno, voi
+                if (getSubjArticlePOS().contains(reading.pos) || reading.pos == PartOfSpeech.NOUN) {
+                    subjectReadings.add(reading);
+                }
+            }
+
+            /*
             // Loop through all interpretations of the word and check to
             // see if the interpretation represents a noun or an article.
             boolean hasArticle = false;
@@ -155,9 +168,12 @@ public class VerbAgreementRule extends Rule {
                     subjectReadings = random.getValue();
                 }
             } // Done with processing the article to find the real subject (noun).
+            */
 
-            // If we don't have a subject, no need to look for associated verbs
-            if (subjectReadings.size() == 0) continue;
+            /* Sometimes the subject is implied.  Even if we can't enforce agreement with the auxiliary, we
+             * can still enfore masculine+singular for the verb when no direct object pronoun is present. */
+            //// If we don't have a subject, no need to look for associated verbs
+            //if (subjectReadings.size() == 0) continue;
 
             // A variable number of verbs may be associated with the subject.  We can track them by level.
             // Modals, auxiliaries and direct object pronouns are optional, but all sentences must have a verb.
@@ -224,6 +240,12 @@ public class VerbAgreementRule extends Rule {
                         bucketPosTags = emptyPosTags;
                         bucketWordGroup = getDirectObjectPronouns();
                         bucketRelations = dopRelations;
+
+                        // Direct object pronouns must come before auxiliary verbs if they are to influence agreement.
+                        // Skip processing this obj if we have already processed an auxiliary for this level.
+                        if (auxiliariesAvere.containsKey(bucketLevel)) {
+                            continue;
+                        }
                     }
 
                     // If the participant comes before it's parent in the sentence, then
@@ -404,7 +426,7 @@ public class VerbAgreementRule extends Rule {
                     if (replacements.size() > 0) ruleMatch.setSuggestedReplacements(replacements);
                     ruleMatches.add(ruleMatch);
                 }
-            }
+            } // Done iterating over agreement pairs.
         } // Done checking each token in the sentence.
 
         RuleMatch[] results = ruleMatches.toArray(new RuleMatch[ruleMatches.size()]);
