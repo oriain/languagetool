@@ -52,7 +52,8 @@ public class CeilingAnalysisTest {
     @Test
     public void validateFile(){
         try {
-            boolean isValid = CoNLL.Validate(fileName);
+            //boolean isValid = CoNLL.Validate(fileName);
+            boolean isValid = CoNLL.Validate("C:\\Users\\littl\\Downloads\\MaltOptimizer-1.0.3\\all.conl");
             assertTrue(isValid);
         } catch (IOException e) {
             e.printStackTrace();
@@ -133,6 +134,12 @@ public class CeilingAnalysisTest {
     // 11/02/2016: 0.475 -> 0.480 -> 0.300 -> 0.522
     // 11/02/2016: 0.519 -> 0.528 -> 0.408 -> 0.571
     // 11/02/2016: 0.538 -> 0.549 -> 0.490 -> 0.769
+    // 11/05/2016: 0.593 -> 0.630 -> 0.667 -> 0.966
+    // 11/06/2016: 0.571 -> 0.632 -> 0.611 -> 0.854
+    // 11/06/2016: 0.579 -> 0.613 -> 0.563 -> 0.950
+    // 11/06/2016: 0.613 -> 0.613 -> 0.563 -> 0.950     LAS: 0.549 -> 0.549 -> 0.461 -> 1.000
+    // 11/12/2016: 0.441 -> 0.441 -> 0.563 -> 0.950     LAS: 0.393 -> 0.393 -> 0.469 -> 1.000
+    // 11/23/2016: 0.488 -> 0.488 -> 0.488 -> 0.927     LAS: 0.624 -> 0.624 -> 0.534 -> 1.000
 
     @Test
     public void CeilingAnalysis() throws IOException {

@@ -41,8 +41,8 @@ public class WordTokenizer implements Tokenizer {
   private static final List<String> PROTOCOLS = Collections.unmodifiableList(Arrays.asList("http", "https", "ftp"));
   private static final Pattern URL_CHARS = Pattern.compile("[a-zA-Z0-9/%$-_.+!*'(),\\?]+");
 
-  private static final String TOKENIZING_CHARACTERS = "\u0020\u00A0\u115f" +
-      "\u1160\u1680"
+  private static final String TOKENIZING_CHARACTERS = "\u0020\u00A0\u115f"
+      + "\u1160\u1680"
       + "\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007"
       + "\u2008\u2009\u200A\u200B\u200c\u200d\u200e\u200f"
       + "\u2028\u2029\u202a\u202b\u202c\u202d\u202e\u202f"

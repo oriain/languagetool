@@ -27,6 +27,7 @@ import java.util.ResourceBundle;
 import org.jetbrains.annotations.NotNull;
 import org.languagetool.Language;
 import org.languagetool.LanguageMaintainedState;
+import org.languagetool.language.tokenizers.ItalianWordTokenizer;
 import org.languagetool.languagemodel.LanguageModel;
 import org.languagetool.languagemodel.LuceneLanguageModel;
 import org.languagetool.parsers.DependencyParser;
@@ -45,11 +46,18 @@ import org.languagetool.tokenizers.SentenceTokenizer;
 
 import org.languagetool.tagging.disambiguation.Disambiguator;
 import org.languagetool.tagging.disambiguation.rules.it.ItalianRuleDisambiguator;
+import org.languagetool.tokenizers.Tokenizer;
+import org.languagetool.tokenizers.WordTokenizer;
 import org.maltparser.concurrent.ConcurrentMaltParserModel;
 import org.maltparser.concurrent.graph.ConcurrentDependencyGraph;
 import org.maltparser.core.exception.MaltChainedException;
 
 public class Italian extends Language implements AutoCloseable {
+
+  private static final WordTokenizer WORD_TOKENIZER = new ItalianWordTokenizer();
+  public Tokenizer getWordTokenizer() {
+    return WORD_TOKENIZER;
+  }
 
   private Tagger tagger;
   private SentenceTokenizer sentenceTokenizer;

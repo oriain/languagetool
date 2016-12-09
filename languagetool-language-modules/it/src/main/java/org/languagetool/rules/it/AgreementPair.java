@@ -3,6 +3,7 @@ package org.languagetool.rules.it;
 import org.languagetool.tagging.it.ItalianReading;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -19,6 +20,9 @@ public class AgreementPair {
         return childReadings;
     }
 
+    public AgreementPair(ItalianReading parentReading, List<ItalianReading> childReadings) {
+        this(new ArrayList<ItalianReading>(Arrays.asList(parentReading)), childReadings);
+    }
     public AgreementPair(List<ItalianReading> parentReadings, List<ItalianReading> childReadings) {
         this.parentReadings = parentReadings;
         this.childReadings = childReadings;

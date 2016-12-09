@@ -96,6 +96,7 @@ public class ItalianToken extends AnalyzedTokenReadings {
         String wordform = this.getToken();
         String lemma = lemmas.size() > 1 ? lemmas.toString() : lemmas.get(1);
         String partOfSpeech = pos.size() > 1 ? pos.toString() : pos.get(1);
+        partOfSpeech = partOfSpeech.replace(" ", "");
         String feat = features.size() > 1 ? features.toString() : features.get(1);
         String underscore = "_";
 

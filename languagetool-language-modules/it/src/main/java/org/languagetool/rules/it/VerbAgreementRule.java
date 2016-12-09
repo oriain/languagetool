@@ -9,6 +9,7 @@ import org.languagetool.tagging.it.ItalianReading;
 import org.languagetool.tagging.it.ItalianSentence;
 import org.languagetool.tagging.it.ItalianToken;
 import org.languagetool.tagging.it.tag.DependencyRelation;
+import org.languagetool.tagging.it.tag.Feature;
 import org.languagetool.tagging.it.tag.PartOfSpeech;
 
 import java.io.IOException;
@@ -29,6 +30,17 @@ public class VerbAgreementRule extends Rule {
     );
     private List<String> getDirectObjectPronouns() {
         return directObjectPronouns;
+    }
+
+    private static List<PartOfSpeech> verbPosTags = Arrays.asList(
+            PartOfSpeech.VER,
+            PartOfSpeech.AUX,
+            PartOfSpeech.MOD,
+            PartOfSpeech.ASP,
+            PartOfSpeech.CAU
+    );
+    private List<PartOfSpeech> getVerbPosTags() {
+        return verbPosTags;
     }
 
     private List<DependencyRelation> subjDepRel = new ArrayList<DependencyRelation>();
@@ -96,84 +108,199 @@ public class VerbAgreementRule extends Rule {
     public RuleMatch[] match(ItalianSentence sentence) throws IOException {
         List<RuleMatch> ruleMatches = new ArrayList<RuleMatch>();
 
-        // Loop through the tokens to identify the subject, direct object pronoun and verbs.
-        for (ItalianToken child : sentence.tokens) {
+        // We need to find the head of the sentence, which is typically the main verb.
+        // From there we need to identify the beginnings of verb chains.
+        // Once we have the verb chains identified, then we can look for subjects and create agreement pairs.
+
+        ItalianToken head = null;
+        for (ItalianToken token : sentence.tokens) {
+            if (token.head == null) {
+                head = token;
+                break;
+            }
+        }
+
+        // Each sentence must have a head token.
+        if (head == null) return ruleMatches.toArray(new RuleMatch[0]);
+
+        // We need a list to track the first verb in potential chain, as well as tokens that still need to be processed.
+        LinkedList<ItalianToken> tokens = new LinkedList<ItalianToken>(Collections.singletonList(head));
+        List<ItalianToken> verbChains = new ArrayList<ItalianToken>();
+
+        // Starting with the head of the sentence, traverse the tree to look for verb chains.
+        while (tokens.size() > 0) {
+            ItalianToken token = tokens.remove();
+
+            // Add this token's children for later examination.
+            tokens.addAll(Arrays.asList(token.getChildren()));
+
+            // We are only interested in verbs.
+            boolean isVerb = false;
+            for (ItalianReading reading : token.readings) {
+                if (getVerbPosTags().contains(reading.pos)) {
+                    isVerb = true;
+                    break;
+                }
+            }
+
+            // If this token is not a verb, move on to the next token.
+            if (!isVerb) continue;
+
+            // We only want the first verb of a chain, since we process the chain later on.
+            // Check to see if the token has no head or if the head of this verb is another verb.
+            if (token.head == null) {
+                verbChains.add(token);
+            } else {
+                boolean parentIsVerb = false;
+                for (ItalianReading reading : token.head.readings) {
+                    if (getVerbPosTags().contains(reading.pos)) {
+                        parentIsVerb = true;
+                        break;
+                    }
+                }
+                if (!parentIsVerb) verbChains.add(token);
+            }
+        } // Done looking for verb chains.
+
+        // Process the verb chains.  Create agreement pairs out of subjects,
+        // direct object pronoun, auxiliaries, modal and verbs.
+        for (ItalianToken verb : verbChains) {
             // We will iterate over the tokens in a sentence to find pairs of tokens that need to agree.
             List<AgreementPair> agreementPairs = new ArrayList<AgreementPair>();
 
-            // The subject must have a parent (usually a verb of some kind).
-            if (child.head == null) continue;
-
-            // TODO: We need to accomodate the scenario where there is no subject in the sentence,
-            // but there is anavere auxiliary and verb with no direct object pronoun,
-            // meaning the verb should be singular and masculine.
-
-            // Check for subject dependency relations: SUBJ, SUBJ_OBJ, OBJ_SUBJ, PREDCOMPL_OBJ
-            if (!getSubjDepRel().contains(child.dependencyRelation)) continue;
-
-            // The subject will control agreement for one or more tokens in a sentence.
-            List<ItalianReading> subjectReadings = new ArrayList<ItalianReading>();
-
-            // Was trying to use noun, but sometimes there is only a personal pronoun. So we'll use
-            // the token who dependency relation is a subject and is either an article or the noun.
-            for (ItalianReading reading : child.readings) {
-                // A handful of words can be both a noun and an article: cosa, dei, nei, uno, voi
-                if (getSubjArticlePOS().contains(reading.pos) || reading.pos == PartOfSpeech.NOUN) {
-                    subjectReadings.add(reading);
-                }
+            // Similar to verbs, there may not be a single subject, but rather a series or "chain" of subjects.
+            // Essentially, a subject "chain" is a series of nouns connected with coordinating conjunctions.
+            // In a dependency graph, the first subject depends on the first verb, then the first
+            // coordinating conjunction depends on the first subject, then the second subject depends on the first
+            // coordinating conjunction, etc.  VERB -> SUBJ -> CC -> SUBJ -> CC -> SUBJ...
+            List<LinkedList<ItalianToken>> subjectChains = new ArrayList<LinkedList<ItalianToken>>();
+            for (ItalianToken firstSubjectInChain : verb.getChildren()) {
+                LinkedList<ItalianToken> subjects = new LinkedList<ItalianToken>(Arrays.asList(firstSubjectInChain));
+                subjectChains.add(subjects);
             }
 
-            /*
-            // Loop through all interpretations of the word and check to
-            // see if the interpretation represents a noun or an article.
-            boolean hasArticle = false;
-            for (ItalianReading reading : child.readings) {
-                // A handful of words can be both a noun and an article: cosa, dei, nei, uno, voi
-                if (reading.pos == PartOfSpeech.NOUN) {
-                    subjectReadings.add(reading);
-                }
-                if (getSubjArticlePOS().contains(reading.pos)) {
-                    hasArticle = true;
-                }
-            }
+            // As we process the subjects in a chain, we will save valid subjects and
+            // their readings to new lists, which we'll use later for enforcing agreement.
+            List<ArrayList<ItalianToken>> subjects = new ArrayList<ArrayList<ItalianToken>>();
+            List<ArrayList<ItalianReading>> subjectReadings = new ArrayList<ArrayList<ItalianReading>>();
 
-            if (hasArticle) {
-                // If the token being examined has an article as one of its interpretation,
-                // check grandchildren for the real subject (noun).
-                Map<ItalianToken, List<ItalianReading>> grandchildren = new HashMap<ItalianToken, List<ItalianReading>>();
-                for (ItalianToken grandchild : child.getChildren()) {
-                    // The subject must be an argument of the article.
-                    if (grandchild.dependencyRelation == DependencyRelation.ARG) {
-                        // Loop through all possible readings.
-                        for (ItalianReading reading : grandchild.readings) {
-                            // We only want children of the article if they are a noun.
-                            if (reading.pos == PartOfSpeech.NOUN) {
-                                // Add the reading to the set.
-                                if (grandchildren.containsKey(grandchild)) {
-                                    List<ItalianReading> readings = grandchildren.get(grandchild);
-                                    readings.add(reading);
-                                } else {
-                                    grandchildren.put(grandchild, new ArrayList<ItalianReading>(Arrays.asList(reading)));
-                                }
-                            }
-                        } // Don looping over all the readings
+            // It may be easier to track gender and number, due to the possibility of coordinating subjects,
+            // and use it to construct a fake ItalianReading for agreement purposes.
+            List<Boolean> subjectsAreMasculine = new ArrayList<Boolean>();
+            List<Boolean> subjectsArePlural = new ArrayList<Boolean>();
+
+            for (LinkedList<ItalianToken> subjectChain : subjectChains) {
+
+                // Lists and tracking variables
+                ArrayList<ItalianToken> validSubjects = new ArrayList<ItalianToken>();
+                ArrayList<ItalianReading> validSubjectReadings = new ArrayList<ItalianReading>();
+                boolean isMasculine = false;
+                boolean isPlural = false;
+                // If a subject doesn't have number, then we will assume singular.
+                // If a subject doesn't have gender, we should assume masculine.
+                // We need a separate hasGender flag for setting the default after processing a subject chain.
+                boolean hasGender = false;
+
+                // Process subjects in the chain.
+                boolean firstWordInChain = true;
+                while (subjectChain.size() > 0) {
+                    ItalianToken subject = subjectChain.remove();
+
+                    // The first subject must have one of the following
+                    // dependency relations: SUBJ, SUBJ_OBJ, OBJ_SUBJ, PREDCOMPL_OBJ
+                    if (firstWordInChain) {
+                        firstWordInChain = false; // Mark false now that we've checked the first subject in the chain.
+                        if (!getSubjDepRel().contains(subject.dependencyRelation)) continue;
                     }
-                } // Done checking all the grandchildren of the article.
+                    // Subject linked by coordinating conjunctions must have a dependecy relation of COORD2ND_BASE
+                    else {
+                        if (subject.dependencyRelation != DependencyRelation.COORD2ND_BASE) continue;
+                    }
 
-                // It's possible there is more than one noun that is an argument of the article.
-                if (grandchildren.size() > 0) {
-                    // I don't know how to tell which is the "correct" subject, so just use the first one.
-                    // Note: HashMap does not guarantee an order, although it doesn't matter in this case.
-                    Map.Entry<ItalianToken, List<ItalianReading>> random = grandchildren.entrySet().iterator().next();
-                    subjectReadings = random.getValue();
+                    // Subjects must also have the correct part of speech. -> Not checking POS anymore.
+                    ArrayList<ItalianReading> readings = new ArrayList<ItalianReading>();
+                    for (ItalianReading reading : subject.readings) {
+                        /* Need to comment out the POS check for subjects since proper nouns can be subjects,
+                        and we can't reliably assume the proper noun will be in the dictionary. */
+                        //if (getSubjArticlePOS().contains(reading.pos) || reading.pos == PartOfSpeech.NOUN) {
+                            if (reading.getGender() != null) {
+                                hasGender = true;
+                            }
+                            if (reading.getGender() == Feature.Gender.M || reading.getGender() == Feature.Gender.m) {
+                                isMasculine = true;
+                            }
+                            if (reading.getNumber() == Feature.Number.P || reading.getNumber() == Feature.Number.p) {
+                                isPlural = true;
+                            }
+                            readings.add(reading);
+                        //}
+                    } // Done processing the readings for this specific subject.
+
+                    // If we didn't find any valid interpretations, process the next token.
+                    if (readings.size() < 1) continue;
+
+                    // Save the token and readings for enforcing agreement later.
+                    validSubjects.add(subject);
+                    validSubjectReadings.addAll(readings);
+
+                    // If we have more than one subject, then we can set the number for the subject chain as plural.
+                    if (validSubjects.size() == 2) {
+                        isPlural = true;
+                    }
+
+                    /* // Going to comment this out so we have the full list of subjects in a chain.
+                    // TODO: Might want to re-enable this code.  But it might just be cleared out during cleanup.
+                    // If the chain is already masculin and plural,
+                    // we don't need to process the rest of the subjects in the chain.
+                    if (isMasculine && isPlural) break;
+                    */
+
+                    // We also need to check the children of the subject for coordinating conjunctions.
+                    LinkedList<ItalianToken> conjunctions = new LinkedList<ItalianToken>(Arrays.asList(subject.getChildren()));
+                    while (conjunctions.size() > 0) {
+                        ItalianToken conjunction = conjunctions.remove();
+
+                        // If the conjunction is a coordinating conjunction,
+                        // add it's children as possible subjects for future processing.
+                        if (conjunction.dependencyRelation == DependencyRelation.COORD_BASE) {
+                            subjectChain.addAll(Arrays.asList(conjunction.getChildren()));
+                        }
+                    } // Done looping over conjunctions for this subject.
+                } // Done processing subjects for a specific chain.
+
+                if (validSubjects.size() > 0) {
+                    // Save the list of valid subjects and readings for this subject chain for later use.
+                    subjects.add(validSubjects);
+                    subjectReadings.add(validSubjectReadings);
+
+                    // Also store the gender and number tracking flags for this subject chain for later use.
+                    if (!hasGender) isMasculine = true;
+                    subjectsAreMasculine.add(isMasculine);
+                    subjectsArePlural.add(isPlural);
                 }
-            } // Done with processing the article to find the real subject (noun).
-            */
 
-            /* Sometimes the subject is implied.  Even if we can't enforce agreement with the auxiliary, we
-             * can still enfore masculine+singular for the verb when no direct object pronoun is present. */
-            //// If we don't have a subject, no need to look for associated verbs
-            //if (subjectReadings.size() == 0) continue;
+            } // Done processing the subject chains attached to this verb.
+
+            // TODO: Do we need to assert that the various lists holding subject chain data
+            // (subjects, subjectReadings, subjectsAreMasculine, subjectsArePlural) have the same lengths?
+
+            // Loop over each subject chain and determine if we need to
+            // create a token purely for use with enforcing agreement.
+            List<ItalianReading> subjectAgreementReadings = new ArrayList<ItalianReading>();
+            for (int i = 0; i < subjects.size(); i++) {
+                ArrayList<ItalianToken> subjTokens = subjects.get(i);
+                ArrayList<ItalianReading> subjReadings = subjectReadings.get(i);
+                boolean isMasculine = subjectsAreMasculine.get(i);
+                boolean isPlural = subjectsArePlural.get(i);
+
+                String gender = (isMasculine) ? "M" : "F";
+                String number = (isPlural) ? "p" : "s";
+                String posTag = "NOUN-" + gender + ":" + number;
+
+                AnalyzedToken subjectAgreementToken = new AnalyzedToken("token", posTag, "lemma");
+                ItalianReading subjectAgreementReading = new ItalianReading(subjectAgreementToken);
+                subjectAgreementReadings.add(subjectAgreementReading);
+            }
 
             // A variable number of verbs may be associated with the subject.  We can track them by level.
             // Modals, auxiliaries and direct object pronouns are optional, but all sentences must have a verb.
@@ -212,7 +339,7 @@ public class VerbAgreementRule extends Rule {
             // TODO: Investigate causitive verbs.
 
             // Process the verb chain as long as necessary, starting with the head of the subject.
-            LinkedList<ItalianToken> participants = new LinkedList<ItalianToken>(Arrays.asList(child.head));
+            LinkedList<ItalianToken> participants = new LinkedList<ItalianToken>(Arrays.asList(verb));
             LinkedList<ItalianToken> nextLevel = new LinkedList<ItalianToken>();
             while (participants.size() > 0) {
 
@@ -225,6 +352,8 @@ public class VerbAgreementRule extends Rule {
                 List<PartOfSpeech> bucketPosTags = verbPosTags;
                 List<String> bucketWordGroup = emptyWordGroup;
                 List<DependencyRelation> bucketRelations = emptyRelations;
+                boolean bucketAddChildren = true;
+                boolean addChildren = false;
                 boolean isAuxiliary = false;
 
                 // We don't need to check for an auxiliary at level 0.
@@ -240,6 +369,7 @@ public class VerbAgreementRule extends Rule {
                         bucketPosTags = emptyPosTags;
                         bucketWordGroup = getDirectObjectPronouns();
                         bucketRelations = dopRelations;
+                        bucketAddChildren = false;
 
                         // Direct object pronouns must come before auxiliary verbs if they are to influence agreement.
                         // Skip processing this obj if we have already processed an auxiliary for this level.
@@ -285,6 +415,7 @@ public class VerbAgreementRule extends Rule {
                                 } else {
                                     bucket.put(bucketLevel, new ArrayList<>(Arrays.asList(reading)));
                                 }
+                                addChildren = bucketAddChildren;
                             } // End of POS tag check.
                         } // Done looping over the interpretations for the participant.
 
@@ -294,7 +425,7 @@ public class VerbAgreementRule extends Rule {
                 // If we processed a modal or verb, add it's children for processing at the next level.
                 // bucketLevel and level will match if we for verbs and modals.
                 // bucketLevel will be one less level for direct object pronouns and auxiliaries.
-                if (bucketLevel == level && bucket.containsKey(bucketLevel)){
+                if (addChildren && bucketLevel == level && bucket.containsKey(bucketLevel)){
                     nextLevel.addAll(Arrays.asList(participant.getChildren()));
                 }
 
@@ -345,9 +476,13 @@ public class VerbAgreementRule extends Rule {
 
                         // Auxiliary verbs must always match the subject.
                         List<ItalianReading> auxReadings = auxiliariesAvere.get(agreementLevel);
-                        if (subjectReadings.size() > 0 && auxReadings.size() > 0) {
-                            AgreementPair pair = new AgreementPair(subjectReadings, auxReadings);
-                            agreementPairs.add(pair);
+                        // for (ArrayList<ItalianReading> subjReadings : subjectReadings) {
+                        //    if (subjReadings.size() > 0 && ) {
+                        if (auxReadings.size() > 0) {
+                            for (ItalianReading subjectAgreementReading : subjectAgreementReadings) {
+                                AgreementPair pair = new AgreementPair(subjectAgreementReading, auxReadings);
+                                agreementPairs.add(pair);
+                            }
                         }
 
                         // If a direct object pronoun is present, then it controls the agreement of the modal
@@ -372,23 +507,26 @@ public class VerbAgreementRule extends Rule {
                     // If the modal does not have an auxiliary, or the associated auxiliary does
                     // not have avere as the lemma, then the modal must agree with the subject.
                     else {
-                        if (verbModalReadings.size() > 0 && subjectReadings.size() > 0) {
-                            AgreementPair pair = new AgreementPair(subjectReadings, verbModalReadings);
-                            agreementPairs.add(pair);
-                        }
-
-                        // If the modal has an auxiliary associated with it, and the auxiliary did not have
-                        // "avere" as it's lemma, then the auxiliary must also agree with the subject.
-                        if (auxiliariesOther.containsKey(agreementLevel)) {
-                            List<ItalianReading> auxReadings = auxiliariesOther.get(agreementLevel);
-                            if (subjectReadings.size() > 0 && auxReadings.size() > 0) {
-                                AgreementPair pair = new AgreementPair(subjectReadings, auxReadings);
+                        // for (ArrayList<ItalianReading> subjReadings : subjectReadings) {
+                        //     if (subjReadings.size() > 0) {
+                        for (ItalianReading subjectAgreementReading : subjectAgreementReadings) {
+                            if (verbModalReadings.size() > 0) {
+                                AgreementPair pair = new AgreementPair(subjectAgreementReading, verbModalReadings);
                                 agreementPairs.add(pair);
+                            }
+
+                            // If the modal has an auxiliary associated with it, and the auxiliary did not have
+                            // "avere" as it's lemma, then the auxiliary must also agree with the subject.
+                            if (auxiliariesOther.containsKey(agreementLevel)) {
+                                List<ItalianReading> auxReadings = auxiliariesOther.get(agreementLevel);
+                                if (auxReadings.size() > 0) {
+                                    AgreementPair pair = new AgreementPair(subjectAgreementReading, auxReadings);
+                                    agreementPairs.add(pair);
+                                }
                             }
                         }
                     }
-
-                } // End of verbs.size() check.
+                }
 
                 // Update filter for modals.
                 verbModalPosFilter = PartOfSpeech.MOD;
@@ -420,7 +558,7 @@ public class VerbAgreementRule extends Rule {
                     // TODO: Make a better message.
                     String message = "\"" + childReadings.get(0).analyzedToken.getToken() + "\" " +
                             "does not and needs to agree with " +
-                            "\"" + parentReading.get(0).analyzedToken.getToken() + "\"";
+                            "\"" + parentReading.get(0).analyzedToken.getPOSTag() + "\"";
 
                     RuleMatch ruleMatch = new RuleMatch(this, start, end, message);
                     if (replacements.size() > 0) ruleMatch.setSuggestedReplacements(replacements);
